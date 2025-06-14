@@ -1,0 +1,8 @@
+\ Model bilinear_copy
+\ LP format - for model browsing. Use MPS format to capture full model detail.
+Minimize
+ 
+Subject To
+ R0: soc_b_l1 = -4151.217111423322
+Bounds
+End
