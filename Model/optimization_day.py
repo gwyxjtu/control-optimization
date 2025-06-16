@@ -11,6 +11,27 @@ import pandas as pd
 from cpeslog.log_code import _logging
 
 
+def get_index(temperature, eta_dict):
+    """获取温度对应的效率，根据最临近的温度来获取
+
+    Args:
+        temperature (_type_): 温度
+        eta_dict (_type_): 效率字典，键为温度，值为对应的效率
+
+    Returns:
+        eta_device: 对应温度的设备效率
+    """
+    if temperature in eta_dict:
+        eta_device = eta_dict[temperature]
+    else:
+        # 如果温度不在字典中，找到最接近的温度
+        closest_temp = min(eta_dict.keys(), key=lambda x: abs(x - temperature))
+        eta_device = eta_dict[closest_temp]
+    return eta_device
+
+
+
+
 def crf(year):
     i = 0.08
     crf = ((1+i)**year)*i/((1+i)**year-1)
@@ -103,11 +124,11 @@ def opt_day(parameter_json, load_json, begin_time, time_scale, storage_begin_jso
     """
     # 常量
     c_water = 4.2e3 / 3600  # 水的比热容 (kWh/(t·K))
-    # period = time_scale
+    M = 1e12  # 大数
     
     # 初始化设备效率参数
     try:
-        # TODO: 动态效率如何建模？
+        # TODO: 动态效率如何建模？先按读取效率字典来，但不会写代码，目前仍认为这是一个固定值
         # GHP, 浅层地源热泵
         eta_ghp = parameter_json['device']['ghp']['eta_ghp']
         eta_pump_ghp = parameter_json['device']['ghp']['eta_pump']
@@ -127,7 +148,10 @@ def opt_day(parameter_json, load_json, begin_time, time_scale, storage_begin_jso
         # eta_pump_ht = parameter_json['device']['ht']['eta_pump']
         # TODO: 是否需要地热井？
         # BS, 蓄电池
-
+        # TODO: 是否需要蓄电池储能损失？
+        # eta_bs_loss = parameter_json['device']['bs']['eta_loss']
+        # PV, 光伏
+        eta_pv = parameter_json['device']['pv']['eta_pv']
         # PIPE, 管网
         eta_pipe_loss = parameter_json['device']['pipe']['eta_loss']
         eta_pump_pipe = parameter_json['device']['pipe']['eta_pump']
@@ -138,39 +162,35 @@ def opt_day(parameter_json, load_json, begin_time, time_scale, storage_begin_jso
 
     # 初始化容量参数
     try:
-        P_ht = parameter_json['device']['ht']['energy']
-        # m_ct = parameter_json['device']['ct']['water_max']
-        m_de = parameter_json['device']['de']['water_max']
-        m_gtw=parameter_json['device']['gtw']['water_max']
-        P_PV = parameter_json['device']['pv']['power_max']
-        # k_gtw_fluid=877/898*m_gtw/400-0.0297
-        k_gtw_fluid=0.12
-        p_fc_max = parameter_json['device']['fc']['power_max']
-        p_el_max = parameter_json['device']['el']['power_max']
-        k_el = parameter_json['device']['el']['beta_el']
-        p_eb_max = parameter_json['device']['eb']['power_max']
-        # a_pv = parameter_json['device']['pv']['area_max']
-        # hst_max = parameter_json['device']['hst']['sto_max']
-        p_hp_max = parameter_json['device']['hp']['power_max']
+        p_ghp_max = parameter_json['device']['ghp']['power_max']  # 浅层地源热泵额定功率
+        p_eb_max = parameter_json['device']['eb']['power_max']  # 电锅炉额定功率
+        p_ahp_max = parameter_json['device']['ahp']['power_max']  # 空气源热泵额定功率
+        p_fc_max = parameter_json['device']['fc']['power_max']  # 燃料电池额定功率
+        m_ht_sto = parameter_json['device']['ht']['water_max']  # 储热罐水量
+        p_bs_sto_ub = parameter_json['device']['bs']['power_max']  # 蓄电池储能上限
+        p_bs_sto_lb = parameter_json['device']['bs']['power_min']  # 蓄电池储能下限
+        p_pv_max = parameter_json['device']['pv']['power_max']  # 光伏发电装机容量
     except BaseException as E:
         _logging.error('读取config.json中设备容量参数失败,错误原因为{}'.format(E))
         raise Exception
 
     # 初始化边界上下限参数
     try:
-        t_ht_max = parameter_json['device']['ht']['t_max']
-        t_ht_min = parameter_json['device']['ht']['t_min']
-        # t_ct_max = parameter_json['device']['ct']['t_max']
-        # t_ct_min = parameter_json['device']['ct']['t_min']
-        t_de_max = parameter_json['device']['de']['t_max']
-        t_de_min = parameter_json['device']['de']['t_min']
-        t_gtw_in_min=parameter_json['device']['gtw']['t_in_min']
-        # t_ht_wetbulb = parameter_json['device']['ht']['t_wetbulb']
-        # t_ct_wetbulb = parameter_json['device']['ct']['t_wetbulb']
-        # slack_ht = parameter_json['device']['ht']['end_slack']
-        # slack_ct = parameter_json['device']['ct']['end_slack']
-        # slack_hsto = parameter_json['device']['hst']['end_slack']
-        tem_diff=parameter_json['device']['de']['temperature_difference']#读取供回水温度差
+        t_ht_sto_ub = parameter_json['device']['ht']['t_max']
+        t_ht_sto_lb = parameter_json['device']['ht']['t_min']
+        # TODO: 是否按照此读取各流量上下限？
+        m_ghp_ub = parameter_json['device']['ghp']['water_max']  # 浅层地源热泵循环水量上限
+        m_ghp_lb = parameter_json['device']['ghp']['water_min']  # 浅层地源热泵循环水量下限
+        m_eb_ub = parameter_json['device']['eb']['water_max']
+        m_eb_lb = parameter_json['device']['eb']['water_min']
+        m_ahp_ub = parameter_json['device']['ahp']['water_max']
+        m_ahp_lb = parameter_json['device']['ahp']['water_min']
+        m_fc_ub = parameter_json['device']['fc']['water_max']
+        m_fc_lb = parameter_json['device']['fc']['water_min']
+        m_ht_ub = parameter_json['device']['ht']['water_max']
+        m_ht_lb = parameter_json['device']['ht']['water_min']
+        m_de_ub = parameter_json['device']['pipe']['water_max']  # 管网循环水量上限
+        m_de_lb = parameter_json['device']['pipe']['water_min']  # 管网循环水量下限
     except BaseException as E:
         _logging.error('读取config.json中边界上下限参数失败,错误原因为{}'.format(E))
         raise Exception
@@ -178,7 +198,7 @@ def opt_day(parameter_json, load_json, begin_time, time_scale, storage_begin_jso
     # 初始化价格
     try:
         lambda_ele_in = parameter_json['price']['ele_TOU_price']
-        lambda_ele_in = lambda_ele_in*(int(time_scale/24))
+        lambda_ele_in = lambda_ele_in * (int(time_scale / 24))
         # lambda_ele_out = parameter_json['price']['power_sale']
         hydrogen_price = parameter_json['price']['hydrogen_price']
         p_demand_price = parameter_json['price']['demand_electricity_price']
@@ -196,8 +216,8 @@ def opt_day(parameter_json, load_json, begin_time, time_scale, storage_begin_jso
         g_load = list(input_data['G_DE'])
         q_load = list(input_data['Q_DE'])
         pv_generation = list(input_data['R_PV'])
-        
-        t_tem = list(load_json['ambient_temperature']) #读环境温度
+        # TODO: 认为此为环境温度，是否正确？
+        t_env = list(load_json['ambient_temperature'])  # 读环境温度
         g_func= list(load_json['g函数值'])
     except BaseException as E:
         _logging.error('读取负荷文件中电冷热光参数失败,错误原因为{}'.format(E))
@@ -245,110 +265,142 @@ def opt_day(parameter_json, load_json, begin_time, time_scale, storage_begin_jso
     # 末端
     t_de = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"t_de[{t}]") for t in range(period)]  # 末端供回水温度
     # GHP
-    p_ghp = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"p_ghp[{t}]") for t in range(period)]  # 浅层地源热泵功率
+    p_ghp = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, ub=p_ghp_max,
+                          name=f"p_ghp[{t}]") for t in range(period)]  # 浅层地源热泵功率
     g_ghp = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"g_ghp[{t}]") for t in range(period)]  # 浅层地源热泵供热量
     g_ghp_ht = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"g_ghp_ht[{t}]") for t in range(period)]  # 浅层地源热泵给储热罐蓄热量
     g_ghp_de = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"g_ghp_de[{t}]") for t in range(period)]  # 浅层地源热泵给末端供热量
     t_ghp = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"t_ghp[{t}]") for t in range(period)]  # 浅层地源热泵出水温度
-    m_ghp = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"m_ghp[{t}]") for t in range(period)]  # 浅层地源热泵循环水量
+    m_ghp = [model.addVar(vtype=GRB.CONTINUOUS, lb=m_ghp_lb, ub=m_ghp_ub,
+                          name=f"m_ghp[{t}]") for t in range(period)]  # 浅层地源热泵循环水量
     p_pump_ghp = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"p_pump_ghp[{t}]") for t in range(period)]  # 浅层地源热泵循环泵功率
     # EB
-    p_eb = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"p_eb[{t}]") for t in range(period)]
+    p_eb = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, ub=p_eb_max,
+                         name=f"p_eb[{t}]") for t in range(period)]
     g_eb = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"g_eb[{t}]") for t in range(period)]
     g_eb_ht = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"g_eb_ht[{t}]") for t in range(period)]
     g_eb_de = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"g_eb_de[{t}]") for t in range(period)]
     t_eb = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"t_eb[{t}]") for t in range(period)]
-    m_eb = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"m_eb[{t}]") for t in range(period)]
+    m_eb = [model.addVar(vtype=GRB.CONTINUOUS, lb=m_eb_lb, ub=m_eb_ub,
+                         name=f"m_eb[{t}]") for t in range(period)]
     p_pump_eb = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"p_pump_eb[{t}]") for t in range(period)]
     # AHP
-    p_ahp = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"p_ahp[{t}]") for t in range(period)]
+    p_ahp = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, ub=p_ahp_max,
+                          name=f"p_ahp[{t}]") for t in range(period)]
     g_ahp = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"g_ahp[{t}]") for t in range(period)]
     t_ahp = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"t_ahp[{t}]") for t in range(period)]
-    m_ahp = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"m_ahp[{t}]") for t in range(period)]
+    m_ahp = [model.addVar(vtype=GRB.CONTINUOUS, lb=m_ahp_lb, ub=m_ahp_ub,
+                          name=f"m_ahp[{t}]") for t in range(period)]
     p_pump_ahp = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"p_pump_ahp[{t}]") for t in range(period)]
     # FC
     m_h_fc = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"m_h_fc[{t}]") for t in range(period)]  # 燃料电池耗氢量
-    p_fc = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"p_fc[{t}]") for t in range(period)]
+    p_fc = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, ub=p_fc_max,
+                         name=f"p_fc[{t}]") for t in range(period)]
     g_fc = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"g_fc[{t}]") for t in range(period)]
     g_fc_ht = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"g_fc_ht[{t}]") for t in range(period)]
     g_fc_de = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"g_fc_de[{t}]") for t in range(period)]
     t_fc = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"t_fc[{t}]") for t in range(period)]
-    m_fc = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"m_fc[{t}]") for t in range(period)]  # 燃料电池循环水量
+    m_fc = [model.addVar(vtype=GRB.CONTINUOUS, lb=m_fc_lb, ub=m_fc_ub,
+                         name=f"m_fc[{t}]") for t in range(period)]  # 燃料电池循环水量
     p_pump_fc = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"p_pump_fc[{t}]") for t in range(period)]
     # HT
     g_ht = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"g_ht[{t}]") for t in range(period)]  # 储热罐给末端供热量
-    t_ht_sto = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"t_ht_sto[{t}]") for t in range(period)]  # 储热罐蓄热温度
+    t_ht_sto = [model.addVar(vtype=GRB.CONTINUOUS, lb=t_ht_sto_lb, ub=t_ht_sto_ub,
+                             name=f"t_ht_sto[{t}]") for t in range(period)]  # 储热罐蓄热温度
     t_ht = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"t_ht[{t}]") for t in range(period)]  # 储热罐出水温度
-    m_ht = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"m_ht[{t}]") for t in range(period)]  # 储热罐循环水量
+    m_ht = [model.addVar(vtype=GRB.CONTINUOUS, lb=m_ht_lb, ub=m_ht_ub,
+                         name=f"m_ht[{t}]") for t in range(period)]  # 储热罐循环水量
     # p_pump_ht = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"p_pump_ht[{t}]") for t in range(period)]
     # BS
-    p_bs_sto = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"p_bs_sto[{t}]") for t in range(period)]  # 蓄电池储能量
-    p_bs_ch = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"p_bs_ch[{t}]") for t in range(period)]  # 蓄电池充电功率
-    p_bs_dis = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"p_bs_dis[{t}]") for t in range(period)]  # 蓄电池放电功率
+    p_bs_sto = [model.addVar(vtype=GRB.CONTINUOUS, lb=p_bs_sto_lb, ub=p_bs_sto_ub,
+                             name=f"p_bs_sto[{t}]") for t in range(period)]  # 蓄电池储能量
+    p_bs_ch = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, ub=p_bs_sto_ub-p_bs_sto_lb,
+                            name=f"p_bs_ch[{t}]") for t in range(period)]  # 蓄电池充电功率
+    p_bs_dis = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, ub=p_bs_sto_ub-p_bs_sto_lb,
+                             name=f"p_bs_dis[{t}]") for t in range(period)]  # 蓄电池放电功率
     # PIPE
     t_supply = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"t_supply[{t}]") for t in range(period)]  # 供水温度
-    m_de = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"m_de[{t}]") for t in range(period)]  # 管网循环水量
+    m_de = [model.addVar(vtype=GRB.CONTINUOUS, lb=m_de_lb, ub=m_de_ub,
+                         name=f"m_de[{t}]") for t in range(period)]  # 管网循环水量
     p_pump_pipe = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"p_pump_pipe[{t}]") for t in range(period)]  # 管网循环泵功率
     # PV
     p_pv = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"p_pv[{t}]") for t in range(period)]  # 光伏发电功率
     # TODO: PVT 要管吗？
 
     # 添加约束
-    # if hydrogen_bottle_max_final - hydrogen_bottle_max_start>=-1:
-    #     model.addConstr(gp.quicksum(h_pur) <= hydrogen_bottle_max_final - hydrogen_bottle_max_start)
-    # else:
-    #     model.addConstr(gp.quicksum(h_pur) == 0)
-    #print(storage_end_json['end_slack'][0])
-    # if storage_end_json['end_slack'][begin_time+time_scale] == False:
-    #     model.addConstr(t_ht[-1] == t_ht_final)
-    #     # model.addConstr(t_ct[-1] == t_ct_final)
-    #     # model.addConstr(h_sto[-1] == hst_kg_final)
-    # else:
-    #     model.addConstr(t_ht[-1] >= t_ht_start * (1-slack_ht))
-    #     model.addConstr(t_ht[-1] <= t_ht_start * (1+slack_ht))
-    #     # model.addConstr(t_ct[-1] >= t_ct_start * (1-slack_ct))
-    #     # model.addConstr(t_ct[-1] <= t_ct_start * (1+slack_ct))
-    #     # model.addConstr(h_sto[-1] >= hst_kg_start * (1-slack_hsto))
-    #     # model.addConstr(h_sto[-1] <= hst_kg_start * (1+slack_hsto))
-    # # 储能约束
-    # model.addConstr(g_l[0] == t_ht_start)
-    # model.addConstr(q_l[0] == t_de_start)
-    # model.addConstr(g_gtw_l[0] == 0)
-    # model.addConstr(t_ct_l[0] == t_ct_start)
-    # model.addConstr(h_sto_l[0] == hst_kg_start)
-    # model.addConstr(t_ht[-1] >= t_ht_final)
-
-    model.addConstrs(g[i] == g_l[i+1] for i in range(period-1))
-    model.addConstrs(h[i] == h_l[i+1] for i in range(period-1))
-    model.addConstrs(q[i] == q_l[i+1] for i in range(period-1))
-    model.addConstrs(g_gtw[i] == g_gtw_l[i+1] for i in range(period-1))
-    model.addConstr(g[period-1] == g_l[0])
-    model.addConstr(h[period-1] == h_l[0])
-    model.addConstr(q[period-1] == q_l[0])
-    model.addConstr(g_gtw[period-1] == g_gtw_l[0])
-
-    
-    # model.addConstr(gp.quicksum(z_hp)<=period*10/24)
     # 能量平衡
-    # model.addConstr(p_fc[i] + p_pur[i] + p_pv[i] == p_el[i] + p_eb[i] + p_hp[i]  + p_pump[i] + p_load[i])
-    model.addConstrs(p_fc[i] + p_pv[i] == p_eb[i] + p_hp_max*(z_hp_g[i]+z_hp_q[i]) + p_load[i] + p_el[i] for i in range(period))
-    model.addConstrs(
-        g_eb[i] + g_fc[i] + g_hp[i] + g_OU[i] - g_IN[i] - g_HP_IN[i] -
-        g_load[i] == 0 for i in range(period)
-    )
-    model.addConstrs(q_hp[i] + q_OU[i] - q_IN[i] - q_load[i] == 0 for i in range(period))
+    model.addConstrs(p_pur[t] + p_pv[t] + p_fc[t] + p_bs_dis[t]
+                     == p_load[t] + p_ghp[t] + p_eb[t] + p_ahp[t] + p_bs_ch[t]
+                     + p_pump_ghp[t] + p_pump_eb[t] + p_pump_ahp[t] + p_pump_fc[t] + p_pump_pipe[t]
+                     for t in range(period))
+    # TODO: 确认 M^{DE} 和 t^{MP} 指代是否正确
+    # TODO: 要添加工况约束吧，不然有问题
+    model.addConstrs(g_ghp_de[t] + g_eb_de[t] + g_ahp[t] + g_fc_de[t] + g_ht[t]
+                     == g_load[t] + c_water * m_de[t] * (t_de[t + 1] - t_de[t])
+                     for t in range(period - 1))
+    # TODO: 末时刻请果哥确认
+    model.addConstr(g_ghp_de[-1] + g_eb_de[-1] + g_ahp[-1] + g_fc_de[-1] + g_ht[-1]
+                    == g_load[-1] + c_water * m_de[-1] * (t_de[0] - t_de[-1]))
+    model.addConstrs(h_pur[t] == m_h_fc[t] for t in range(period))  # 氢源购氢量等于燃料电池耗氢量
+    # 流量平衡
+    # TODO: 如何处理蓄热的流量平衡？文档中未体现
+    model.addConstrs(m_ghp[t] + m_eb[t] + m_ahp[t] + m_fc[t] + m_ht[t] == m_de[t] for t in range(period))
+    model.addConstrs(m_ghp[t] * t_ghp[t] + m_eb[t] * t_eb[t] + m_ahp[t] * t_ahp[t] + m_fc[t] * t_fc[t]
+                     + m_ht[t] * t_ht[t] == m_de[t] * t_supply[t] for t in range(period))
 
-        #model.addConstr(c*m_ht*(t_ht[i] - t_ht_l[i] - ht_loss * (t_ht_l[i] - t_ht_wetbulb)) + g_load[i] == g_fc[i] + g_hp[i] + g_eb[i])
-        # model.addConstr(g_load[i] == g_fc[i] + g_hp[i] + g_eb[i] + g_ht[i])
+    # 工况约束
+    model.addConstrs(p_pur[t] <= z_pur[t] * M for t in range(period))
+    model.addConstrs(g_ghp[t] == z_ghp_ht[t] * g_ghp_ht[t] + z_ghp_de[t] * g_ghp_de[t] for t in range(period))
+    model.addConstrs(z_ghp_de[t] + z_ghp_ht[t] <= 1 for t in range(period))
+    model.addConstrs(g_eb[t] == z_eb_ht[t] * g_eb_ht[t] + z_eb_de[t] * g_eb_de[t] for t in range(period))
+    model.addConstrs(z_eb_de[t] + z_eb_ht[t] <= 1 for t in range(period))
+    model.addConstrs(g_fc[t] == z_fc_ht[t] * g_fc_ht[t] + z_fc_de[t] * g_fc_de[t] for t in range(period))
+    model.addConstrs(z_fc_de[t] + z_fc_ht[t] <= 1 for t in range(period))
+    model.addConstrs(g_ghp_ht[t] + g_eb_ht[t] + g_fc_ht[t] <= z_ht_sto[t] * M for t in range(period))
+    model.addConstrs(g_ht[t] <= (1 - z_ht_sto[t]) * M for t in range(period))
 
-        #model.addConstr(c*m_ct*(t_ct[i] - t_ct_l[i] - ct_loss * (t_ct_l[i] - t_ct_wetbulb)) + q_hp[i] == q_load[i])
-    # model.addConstr(c*m_ct*(t_ct[i] - t_ct_l[i]) + q_hp[i] == q_load[i])
+    # 设备约束
+    # GHP
+    # TODO: 这怎么建动态效率模型？用 getVal 来读温度吗？
+    model.addConstrs(g_ghp[t] == eta_ghp * p_ghp[t] for t in range(period))
+    # TODO: t^{DE} 是固定值吗？目前先按变量建模
+    model.addConstrs(g_ghp[t] == c_water * m_ghp[t] * (t_ghp[t] - t_de[t]) for t in range(period))
+    model.addConstrs(p_pump_ghp[t] == eta_pump_ghp * m_ghp[t] for t in range(period))
+    # TODO: 缺乏 GTW 约束描述，目前暂未建立 t^{GTW} 的关系
 
-    model.addConstrs(h_el[i] + h_OU[i] + h_pur[i] - h_IN[i] - h_fc[i] == 0 for i in range(period))
-    
-
-
-
+    # EB
+    model.addConstrs(g_eb[t] == eta_eb * p_eb[t] for t in range(period))
+    model.addConstrs(g_eb[t] == c_water * m_eb[t] * (t_eb[t] - t_de[t]) for t in range(period))
+    model.addConstrs(p_pump_eb[t] == eta_pump_eb * m_eb[t] for t in range(period))
+    # AHP
+    model.addConstrs(g_ahp[t] == eta_ahp * p_ahp[t] for t in range(period))
+    model.addConstrs(g_ahp[t] == c_water * m_ahp[t] * (t_ahp[t] - t_de[t]) for t in range(period))
+    model.addConstrs(p_pump_ahp[t] == eta_pump_ahp * m_ahp[t] for t in range(period))
+    # FC
+    model.addConstrs(p_fc[t] == eta_fc_p * m_h_fc[t] for t in range(period))
+    model.addConstrs(g_fc[t] == eta_fc_g * m_h_fc[t] for t in range(period))
+    model.addConstrs(g_fc[t] == c_water * m_fc[t] * (t_fc[t] - t_de[t]) for t in range(period))
+    model.addConstrs(p_pump_fc[t] == eta_pump_fc * m_fc[t] for t in range(period))
+    # HT
+    # TODO: 文档中该公式是否有问题？
+    model.addConstrs(g_ghp_ht[t] + g_eb_ht[t] + g_fc_ht[t] - g_ht[t]
+                     == c_water * m_ht_sto * (t_ht_sto[t + 1] - t_ht_sto[t]) + eta_ht_loss * (t_ht_sto[t] - t_env[t])
+                     for t in range(period - 1))
+    model.addConstr(g_ghp_ht[-1] + g_eb_ht[-1] + g_fc_ht[-1] - g_ht[-1]
+                    == c_water * m_ht_sto * (t_ht_sto[0] - t_ht_sto[-1]) + eta_ht_loss * (t_ht_sto[-1] - t_env[-1]))
+    # TODO: 建模可否省略为 g^{HW} = c * m^{HW} * (t^{HW} - t^{DE})？
+    model.addConstrs(g_ht[t] - g_ghp_ht[t] - g_eb_ht[t] - g_fc_ht[t] == c_water * m_ht[t] * (t_ht[t] - t_de[t])
+                     for t in range(period))
+    # model.addConstrs(p_pump_ht[t] == eta_pump_ht * m_ht[t] for t in range(period))
+    # BS
+    model.addConstrs(p_bs_sto[t + 1] - p_bs_sto[t] == p_bs_ch[t] - p_bs_dis[t] for t in range(period - 1))
+    model.addConstr(p_bs_sto[0] - p_bs_sto[-1] == p_bs_ch[-1] - p_bs_dis[-1])
+    # PV
+    model.addConstrs(p_pv[t] == eta_pv * p_pv_max * pv_generation[t] for t in range(period))
+    # PIPE
+    model.addConstrs(g_load[t] == c_water * m_de[t] * (t_supply[t] - t_de[t]) + eta_pipe_loss * (t_supply[t] - t_env[t])
+                     for t in range(period))
+    model.addConstrs(p_pump_pipe[t] == eta_pump_pipe * m_de[t] for t in range(period))
 
         # # 工况约束
         # model.addConstr(z_a[i]*g_ht[i]>=0)
@@ -361,90 +413,11 @@ def opt_day(parameter_json, load_json, begin_time, time_scale, storage_begin_jso
         #给末端供热的约束
     # model.addConstr(c*m_de*(t_de[i]-t_de_l[i]) == g_ht[i]*z_a[i]+g_eb[i]*(1-z_b[i])+g_fc[i]*(1-z_c[i]-z_e[i])+g_hp[i]*(1-z_d[i]-z_e[i])-g_load[i]-de_loss*(t_de_l[i]-43)*m_de)
 
-
-
-
-
-    # 每一时段约束
-
-    # 上下限约束
-    # model.addConstr(t_ht[i] >= t_ht_min)
-    model.addConstrs(g[i] <= P_ht for i in range(period))
-    model.addConstrs(q[i] <= P_ht for i in range(period))
-    # model.addConstr(t_ct[i] >= t_ct_min)
-    # model.addConstr(t_ct[i] <= t_ct_max)
-    model.addConstrs(t_gtw_in[i]>=t_gtw_in_min for i in range(period))
-    # model.addConstr(t_de[i] >= t_de_min)
-    # model.addConstr(t_de[i] <= t_de_max)
-    model.addConstrs(p_fc[i] <= p_fc_max for i in range(period))
-    model.addConstrs(p_el[i] <= p_el_max for i in range(period))
-    model.addConstrs(p_eb[i] <= p_eb_max for i in range(period))
-    # model.addConstr(p_hp[i] <= p_hp_max)
-
-    # 能量平衡
-
-    # 设备约束
-    ## fc
-    # model.addConstr(p_fc[i] <= p_fc_max)
-    model.addConstrs(p_fc[i] == k_fc_p * h_fc[i] for i in range(period))
-    model.addConstrs(g_fc[i] == k_fc_g * h_fc[i] for i in range(period))
-
-
-    
-    ## hp
-    # model.addConstr(p_hp[i] <= p_hp_max)
-    # model.addConstr(q_hp[i] == k_hp_q * p_hp[i])
-    
-    model.addConstrs(g_hp[i] <= cop_hp[i]*p_hp_max*z_hp_g[i] for i in range(period))
-    model.addConstrs(cop_hp[i] == 3 + 0.1209*t_gtw_out[i] for i in range(period))
-    model.addConstrs(q_hp[i] <= k_hp_q*p_hp_max*z_hp_q[i] for i in range(period))
-    # model.addConstrs(g_HP_IN[i]<=p_hp_max*z_hp_i[i] for i in range(period))
-    
-    # model.addConstrs(g_gtw[i] == (g_hp[i]-p_hp_max)*z_hp_g[i] - (q_hp[i]+p_hp_max)*z_hp_q[i] for i in range(period))
-    model.addConstrs(g_gtw[i] == (cop_hp[i]*p_hp_max-p_hp_max)*z_hp_g[i] - (k_hp_q*p_hp_max+p_hp_max)*z_hp_q[i] - g_HP_IN[i] for i in range(period))
-    model.addConstrs(z_hp_g[i]+z_hp_q[i]<=1 for i in range(period))
-
-    model.addConstrs(g_gtw[i] == c*m_gtw*(t_gtw_out[i] - t_gtw_in[i]) for i in range(period))
-    model.addConstrs(t_gtw_out[i] == k_gtw_fluid*(t_gtw_in[i]-t_b[i])+t_b[i] for i in range(period))
-    # model.addConstrs(t_b[i] == 9.5-(1000/(2*np.pi*2.07*200*192))*gp.quicksum((g_gtw[j%period]-g_gtw_l[j%period])*g_func[(i-j)%(7*24)] for j in range(i+1-7*24,i+1)) for i in range(period))
-    model.addConstrs(t_b[i] == 9.5-(1000/(2*np.pi*2.07*200*192))*gp.quicksum((g_gtw[j]-g_gtw_l[j])*g_func[(i-j)] for j in range(max(i-30*24,0),i)) for i in range(period))
-    # for d in range(period//24):
-    #     model.addConstrs(t_b[d*24 + i] == 10-(1000/(2*np.pi*2.07*200*192))*gp.quicksum((g_gtw[d*24+j%24]-g_gtw_l[d*24+j%24])*g_func[(i-j)%(24*7)] for j in range(24*7)) for i in range(24))
-        # model.addConstr(t_b[d*24]==t_b[(d*24+24)%288])
-    model.addConstrs(t_b[i]>=5 for i in range(period))
-    # model.addConstrs(t_gtw_in[i]==10 for i in range(period))
-    model.addConstrs(t_b[i]<=15 for i in range(period))
-    ## el
-    model.addConstrs(p_el[i] <= p_el_max for i in range(period))
-    model.addConstrs(h_el[i] == k_el * p_el[i] for i in range(period))
-    ## eb
-    model.addConstrs(p_eb[i] <= p_eb_max for i in range(period))
-    model.addConstrs(g_eb[i] == k_eb * p_eb[i] for i in range(period))
-    ## pump
-    #model.addConstr(p_pump[i] == k_pump * mass_flow[i])
-    ## pv
-    # model.addConstr(p_pv[i] <= solar[i] * a_pv * k_pv)
-    model.addConstrs(p_pv[i] <= P_PV*pv_generation[i] for i in range(period))
-
-    ## ht
-    ### ht温度变化
-    # model.addConstr(c*m_ht*(t_ht[i]-t_ht_l[i])==-g_ht[i]-ht_loss*(t_ht_l[i]-t_tem[i])*m_ht)
-    # ### ht供热温度约束
-    # model.addConstr(t_ht_l[i]-t_de_l[i]+tem_diff/2>=100*(z_ht_de[i]-1))
-    # model.addConstr(g_ht[i]<=c*m_de*(t_ht_l[i]-t_de_l[i])*z_ht_de[i])
-    # # model.addConstr(t_ht_l[i]-45>=100*(z_ht_de[i]-1))
-    # model.addConstr(t_ht_l[i]-45<=100*(z_ht_de[i]))
-    # model.addConstr(g_ht[i]<=c*m_de*(t_ht_l[i]-45)*z_ht_de[i])
-
-    model.addConstrs(g[i] - (0.95) * g_l[i] == g_IN[i] - g_OU[i] for i in range(period))
-    model.addConstrs(q[i] - (0.95) * q_l[i] == q_IN[i] - q_OU[i] for i in range(period))
-    model.addConstrs(h[i] - (0.99) * h_l[i] == h_IN[i] - h_OU[i] for i in range(period))
-    ## opex 
-    model.addConstrs(opex[i] == hydrogen_price * h_pur[i] for i in range(period))
-    # set objective
-    
-    model.setObjective(gp.quicksum(opex), GRB.MINIMIZE)
-    # model.setObjective(gp.quicksum(opex), GRB.MINIMIZE)
+    # opex
+    model.addConstrs(opex_t[t] == hydrogen_price * h_pur[t] + lambda_ele_in[t] * p_pur[t] for t in range(period))
+    model.addConstr(opex == gp.quicksum(opex_t[t] for t in range(period)))  # 总运行成本
+    # 设置目标函数
+    model.setObjective(opex, GRB.MINIMIZE)
     model.params.NonConvex = 2
     model.params.MIPGap = 0.02
     # model.params.TimeLimit=300
@@ -459,6 +432,7 @@ def opt_day(parameter_json, load_json, begin_time, time_scale, storage_begin_jso
         print("Irreducible inconsistent subsystem is written to file 'model.ilp'")
         exit(0)
 
+    # TODO: 输出未处理
     # 计算一些参数
     # opex_without_opt = [lambda_ele_in[i]*(p_load[i]+q_load[i]/k_hp_q+g_load[i]/k_eb) for i in range(period)]
     dict_control = {# 负荷
@@ -581,184 +555,9 @@ def opt_day(parameter_json, load_json, begin_time, time_scale, storage_begin_jso
         # #thermal
         # 't_ht':[t_ht[i].x for i in range(period)],  
     }
-    return dict_control,dict_plot
-
-
+    return dict_control, dict_plot
 
 
 if __name__ == '__main__':
-    opt_day()
-
-
-# period = len(g_de)
-# # Create a new model
-# m = gp.Model("bilinear")
-
-# # Create variables
-# ce_h = m.addVar(vtype=GRB.CONTINUOUS, lb=0, name="ce_h")
-
-# m_ht = m.addVar(vtype=GRB.CONTINUOUS, lb=10, name="m_ht") # capacity of hot water tank
-
-# t_ht = [m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"t_ht{t}") for t in range(period)] # temperature of hot water tank
-
-# t_fc = [m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"t_fc{t}") for t in range(period)] # outlet temperature of fuel cells cooling circuits
-
-# g_fc = [m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"g_fc{t}") for t in range(period)] # heat generated by fuel cells
-
-# p_fc = [m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"p_fc{t}") for t in range(period)]
-
-# fc_max = m.addVar(vtype=GRB.CONTINUOUS, lb=0, name="fc_max") # rated heat power of fuel cells
-
-# el_max = m.addVar(vtype=GRB.CONTINUOUS, lb=0, name="el_max") # rated heat power of fuel cells
-
-# t_de = [m.addVar(vtype=GRB.CONTINUOUS, lb=0,name=f"t_de{t}") for t in range(period)] # outlet temparature of heat supply circuits
-
-# h_fc = [m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"h_fc{t}") for t in range(period)] # hydrogen used in fuel cells
-
-# m_fc = m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"m_fc") # fuel cells water
-
-# m_el = m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"m_el") # fuel cells water
-
-
-# g_el = [m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"g_el{t}") for t in range(period)] # heat generated by Electrolyzer
-
-# h_el = [m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"h_el{t}") for t in range(period)] # hydrogen generated by electrolyzer
-
-# p_el = [m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"p_el{t}") for t in range(period)] # power consumption by electrolyzer
-
-# t_el = [m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"t_el{t}") for t in range(period)] # outlet temperature of electrolyzer cooling circuits
-
-# h_sto = [m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"h_sto{t}") for t in range(period)] # hydrogen storage
-
-# h_pur = [m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"h_pur{t}") for t in range(period)] # hydrogen purchase
-
-# p_pur = [m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"p_pur{t}") for t in range(period)] # power purchase
-
-# p_sol = [m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"p_sol{t}") for t in range(period)] # power purchase
-
-# area_pv = m.addVar(vtype=GRB.CONTINUOUS, lb=0, ub = 1000, name=f"area_pv")
-
-# p_pump = [m.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"p_pump{t}") for t in range(period)] 
-
-# hst = m.addVar(vtype=GRB.CONTINUOUS, lb=0, ub = 1000, name=f"hst")
-
-# #m.addConstr(m_el+m_fc <= 0.001*m_ht)
-# for i in range(int(period/24)-1):
-#     m.addConstr(t_ht[i*24+24] == t_ht[24*i])
-# m.addConstr(t_ht[-1] == t_ht[0])
-# #m.addConstr(h_sto[0] == 0)
-# m.addConstr(h_sto[-1] == h_sto[0])
-# for i in range(period - 1):
-#     m.addConstr(m_ht * (t_ht[i + 1] - t_ht[i]) == 
-#         m_fc * (t_fc[i] - t_ht[i]) + m_el * (t_el[i] - t_ht[i]) - m_de[i] * (t_ht[i] - t_de[i]))
-#     m.addConstr(h_sto[i+1] - h_sto[i] == h_pur[i] + h_el[i] - h_fc[i])
-    
-# m.addConstr(m_ht * (t_ht[0] - t_ht[i]) == m_fc * (t_fc[i] - t_ht[i]) + m_el * (t_el[i] - t_ht[i]) - m_de[i] * (t_ht[i] - t_de[i]))
-# m.addConstr(h_sto[0] - h_sto[-1] == h_pur[-1] + h_el[-1] - h_fc[-1])
-# m.addConstr(t_ht[0] == 55)
-# for i in range(period):
-#     m.addConstr(t_de[i] >= 40)
-#     m.addConstr(p_eb[i] + p_el[i] + p_sol[i] + p_pump[i] + p_load[i]== p_pur[i] + p_fc[i] + k_pv*area_pv*r[i])
-#     m.addConstr(g_fc[i] <= 18 * h_fc[i])
-#     m.addConstr(p_pump[i] == 3.5/1000 * (m_fc+m_de[i]+m_el))#热需求虽然低，水泵耗电高。
-#     m.addConstr(p_fc[i] <= 18 * h_fc[i])#氢燃烧产电
-#     m.addConstr(h_el[i] <= k_el * p_el[i])
-#     m.addConstr(g_el[i] <= 0.2017*p_el[i])
-#     m.addConstr(g_fc[i] == c_kWh * m_fc * (t_fc[i] - t_ht[i]))
-#     m.addConstr(g_el[i] == c_kWh * m_el * (t_el[i] - t_ht[i]))
-#     m.addConstr(t_fc[i] <= 75)
-#     m.addConstr(t_el[i] <= 75)
-#     m.addConstr(h_sto[i]<=hst)
-#     m.addConstr(h_el[i]<=hst)
-#     #m.addConstr(t_ht[i] >= 50)
-#     m.addConstr(p_fc[i] <= fc_max)
-#     m.addConstr(p_el[i] <= el_max)
-#     m.addConstr(g_de[i] == c_kWh * m_de[i] * (t_ht[i] - t_de[i]))
-#     #m.addConstr(m_fc <= m_ht)
-# # m.addConstr(m_fc[i] == m_ht/3)
-# # m.addConstr(m_ht >= 4200*100)
-# # m.addConstr(t_ht[i] <= 80)#强化条件
-
-
-# # m.setObjective( crf_pv * cost_pv*area_pv+ crf_el*cost_el*el_max
-# #     +crf_hst * hst*cost_hst +crf_water* cost_water_hot*m_ht + crf_fc *cost_fc * fc_max + lambda_h*gp.quicksum(h_pur)*365+ 
-# #     365*gp.quicksum([p_pur[i]*lambda_ele_in[i] for i in range(24)])-365*gp.quicksum(p_sol)*lambda_ele_out , GRB.MINIMIZE)
-# m.setObjective( crf_pv * cost_pv*area_pv+ crf_el*cost_el*el_max
-#     +crf_hst * hst*cost_hst +crf_water* cost_water_hot*m_ht + crf_fc *cost_fc * fc_max + lambda_h*gp.quicksum(h_pur)*365/7+ 
-#     gp.quicksum([p_pur[i]*lambda_ele_in[i] for i in range(period)])*365/7-gp.quicksum(p_sol)*lambda_ele_out*365/7, GRB.MINIMIZE)
-# #-gp.quicksum(p_sol)*lambda_ele_out 
-# # First optimize() call will fail - need to set NonConvex to 2
-# m.params.NonConvex = 2
-# m.params.MIPGap = 0.05
-# # m.optimize()
-# #m.computeIIS()
-# try:
-#     m.optimize()
-# except gp.GurobiError:
-#     print("Optimize failed due to non-convexity")
-
-# # Solve bilinear model
-# # m.params.NonConvex = 2
-# # m.optimize()
-
-# #m.printAttr('x')
-# m.write('sol_winter.mst')
-# # Constrain 'x' to be integral and solve again
-# # x.vType = GRB.INTEGER
-# # m.optimize()
-
-# # m.printAttr('x')
-
-# wb = xlwt.Workbook()
-# result = wb.add_sheet('result')
-# alpha_ele = 1.01
-# alpha_heat = 0.351
-# ce_c = np.sum(p_load)*alpha_ele + np.sum(g_de)*alpha_heat
-# #c_cer == lambda_carbon*(ce_c - ce_h)
-# p_pur_tmp = m.getAttr('x', p_pur)
-# p_sol_tmp = m.getAttr('x', p_sol)
-# ce_h_1 = np.sum(p_pur_tmp)*alpha_ele - np.sum(p_sol_tmp)*alpha_ele
-
-
-# item1 = ['m_ht','m_fc','m_el','fc_max','el_max']
-# item2 = [g_el,g_fc,p_el,p_fc,p_pur,p_pump,p_sol,t_ht,t_el,h_el,h_fc,t_fc,t_de,h_sto,h_pur]
-# a_pv = m.getVarByName('area_pv').getAttr('x')
-# item3 = [[k_pv*a_pv*r[i] for i in range(len(r))],p_load,g_de]
-# item3_name = ['p_pv','p_load','g_de']
-# print(m.getAttr('x', p_el))
-# for i in range(len(item1)):
-#     result.write(0,i,item1[i])
-#     result.write(1,i,m.getVarByName(item1[i]).getAttr('x'))
-# for i in range(len(item2)):
-#     tmp = m.getAttr('x', item2[i])
-#     result.write(0,i+len(item1),item2[i][0].VarName[:-1])
-#     for j in range(len(tmp)):
-#         result.write(j+1,i+len(item1),tmp[j])
-
-# for i in range(3):
-#     tmp = item3[i]
-#     result.write(0,i+len(item1)+len(item2),item3_name[i])
-#     for j in range(len(tmp)):
-#         result.write(j+1,i+len(item1)+len(item2),tmp[j])
-
-# t_ht = m.getAttr('x', t_ht)
-# m_ht = m.getVarByName('m_ht').getAttr('x')
-# res = []
-# for i in range(len(t_ht)-1):
-#     res.append(c*m_ht*(t_ht[i+1] - t_ht[i])/3.6/1000000)
-# res.append(c*m_ht*(t_ht[0]-t_ht[-1])/3.6/1000000)
-# result.write(0,3+len(item1)+len(item2),'g_ht')
-# for j in range(len(res)):
-#     result.write(j+1,3+len(item1)+len(item2),res[j])
-# result.write(0,4+len(item1)+len(item2),'cer')
-# result.write(1,4+len(item1)+len(item2),(ce_c - ce_h_1))
-
-# wb.save("sol_season_12day_729.xls")
-# #print(m.getJSONSolution())
-
-
-
-
-
-
-
+    pass
+    # opt_day()
