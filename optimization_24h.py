@@ -41,7 +41,7 @@ if __name__ == '__main__':
     sto_end.index = [time_length]
     # 优化主函数
     # try:
-    dict_control, dict_plot = opt_day(parameter_json=input_json, load_json=load, begin_time=0,
+    dict_control, dict_load = opt_day(parameter_json=input_json, load_json=load, begin_time=0,
                                       time_scale=time_length, storage_begin_json=sto, storage_end_json=sto_end)
     # except BaseException as E:
     #     _logging.error('优化主函数执行失败，错误原因为{}'.format(E))
@@ -51,4 +51,4 @@ if __name__ == '__main__':
 
     # 写入输出Excel
     to_csv(dict_control, "dict_opt_plot")
-    # to_csv(dict_plot,"dict_opt_plot_24h")
+    to_csv(dict_load,"dict_opt_load")

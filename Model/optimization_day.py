@@ -1,7 +1,7 @@
 '''
 Author: guo-4060ti 867718012@qq.com
 Date: 2025-06-16 20:19:09
-LastEditTime: 2025-06-18 10:45:51
+LastEditTime: 2025-06-18 12:44:53
 LastEditors: guo-4060ti 867718012@qq.com
 FilePath: \control-optimization\Model\optimization_day.py
 Description: 雪花掩盖着哽咽叹息这离别
@@ -186,6 +186,17 @@ def opt_day(parameter_json, load_json, begin_time, time_scale, storage_begin_jso
     try:
         t_ht_sto_ub = parameter_json['device']['ht']['t_max']
         t_ht_sto_lb = parameter_json['device']['ht']['t_min']
+        t_de_ub = parameter_json['device']['pipe']['t_max']  # 管网供回水温度上限
+        t_de_lb = parameter_json['device']['pipe']['t_min']  # 管网供回水温度下限
+        t_ghp_ub = parameter_json['device']['ghp']['t_max']  # 浅层地源热泵出水温度上限
+        t_ghp_lb = parameter_json['device']['ghp']['t_min']  # 浅层地源热泵出水温度下限
+        t_eb_ub = parameter_json['device']['eb']['t_max']  # 电锅炉出水温度上限
+        t_eb_lb = parameter_json['device']['eb']['t_min']  # 电锅炉出水温度下限
+        t_ahp_ub = parameter_json['device']['ahp']['t_max']  # 空气源热泵出水温度上限
+        t_ahp_lb = parameter_json['device']['ahp']['t_min']  # 空气源热泵出水温度下限
+        t_fc_ub = parameter_json['device']['fc']['t_max']  # 燃料电池出水温度上限
+        t_fc_lb = parameter_json['device']['fc']['t_min']  # 燃料电池出水温度下限
+
         # TODO: 是否按照此读取各流量上下限？
         m_ghp_ub = parameter_json['device']['ghp']['water_max']  # 浅层地源热泵循环水量上限
         m_ghp_lb = parameter_json['device']['ghp']['water_min']  # 浅层地源热泵循环水量下限
@@ -271,7 +282,7 @@ def opt_day(parameter_json, load_json, begin_time, time_scale, storage_begin_jso
     # 氢源
     h_pur = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"h_pur[{t}]") for t in range(period)]  # 购氢量
     # 末端
-    t_de = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"t_de[{t}]") for t in range(period)]  # 末端供回水温度
+    t_de = [model.addVar(vtype=GRB.CONTINUOUS, lb=t_de_lb, ub=t_de_ub, name=f"t_de[{t}]") for t in range(period)]  # 末端供回水温度
     # GHP
     p_ghp = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, ub=p_ghp_max,
                           name=f"p_ghp[{t}]") for t in range(period)]  # 浅层地源热泵功率
@@ -288,7 +299,7 @@ def opt_day(parameter_json, load_json, begin_time, time_scale, storage_begin_jso
     g_eb = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"g_eb[{t}]") for t in range(period)]
     g_eb_ht = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"g_eb_ht[{t}]") for t in range(period)]
     g_eb_de = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"g_eb_de[{t}]") for t in range(period)]
-    t_eb = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"t_eb[{t}]") for t in range(period)]
+    t_eb = [model.addVar(vtype=GRB.CONTINUOUS, lb=t_eb_lb,ub=t_eb_ub, name=f"t_eb[{t}]") for t in range(period)]
     m_eb = [model.addVar(vtype=GRB.CONTINUOUS, lb=m_eb_lb, ub=m_eb_ub,
                          name=f"m_eb[{t}]") for t in range(period)]
     p_pump_eb = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"p_pump_eb[{t}]") for t in range(period)]
@@ -296,7 +307,7 @@ def opt_day(parameter_json, load_json, begin_time, time_scale, storage_begin_jso
     p_ahp = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, ub=p_ahp_max,
                           name=f"p_ahp[{t}]") for t in range(period)]
     g_ahp = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"g_ahp[{t}]") for t in range(period)]
-    t_ahp = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"t_ahp[{t}]") for t in range(period)]
+    t_ahp = [model.addVar(vtype=GRB.CONTINUOUS, lb=t_ahp_lb,ub=t_ahp_ub, name=f"t_ahp[{t}]") for t in range(period)]
     m_ahp = [model.addVar(vtype=GRB.CONTINUOUS, lb=m_ahp_lb, ub=m_ahp_ub,
                           name=f"m_ahp[{t}]") for t in range(period)]
     p_pump_ahp = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"p_pump_ahp[{t}]") for t in range(period)]
@@ -307,7 +318,7 @@ def opt_day(parameter_json, load_json, begin_time, time_scale, storage_begin_jso
     g_fc = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"g_fc[{t}]") for t in range(period)]
     g_fc_ht = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"g_fc_ht[{t}]") for t in range(period)]
     g_fc_de = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"g_fc_de[{t}]") for t in range(period)]
-    t_fc = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"t_fc[{t}]") for t in range(period)]
+    t_fc = [model.addVar(vtype=GRB.CONTINUOUS, lb=t_fc_lb,ub=t_fc_ub, name=f"t_fc[{t}]") for t in range(period)]
     m_fc = [model.addVar(vtype=GRB.CONTINUOUS, lb=m_fc_lb, ub=m_fc_ub,
                          name=f"m_fc[{t}]") for t in range(period)]  # 燃料电池循环水量
     p_pump_fc = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"p_pump_fc[{t}]") for t in range(period)]
@@ -315,7 +326,7 @@ def opt_day(parameter_json, load_json, begin_time, time_scale, storage_begin_jso
     g_ht = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"g_ht[{t}]") for t in range(period)]  # 储热罐给末端供热量
     t_ht_sto = [model.addVar(vtype=GRB.CONTINUOUS, lb=t_ht_sto_lb, ub=t_ht_sto_ub,
                              name=f"t_ht_sto[{t}]") for t in range(period)]  # 储热罐蓄热温度
-    t_ht = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"t_ht[{t}]") for t in range(period)]  # 储热罐出水温度
+    t_ht = [model.addVar(vtype=GRB.CONTINUOUS, lb=0,ub=t_ht_sto_ub, name=f"t_ht[{t}]") for t in range(period)]  # 储热罐出水温度
     m_ht = [model.addVar(vtype=GRB.CONTINUOUS, lb=m_ht_lb, ub=m_ht_ub,
                          name=f"m_ht[{t}]") for t in range(period)]  # 储热罐循环水量
     # p_pump_ht = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"p_pump_ht[{t}]") for t in range(period)]
@@ -464,6 +475,7 @@ def opt_day(parameter_json, load_json, begin_time, time_scale, storage_begin_jso
         "z_fc_ht": [v.x for v in z_fc_ht],
         "z_fc_de": [v.x for v in z_fc_de],
         "z_ht_sto": [v.x for v in z_ht_sto],
+        "p_pv": [v.x for v in p_pv],
         "p_pur": [v.x for v in p_pur],
         "h_pur": [v.x for v in h_pur],
         "t_de": [v.x for v in t_de],
@@ -547,23 +559,15 @@ def opt_day(parameter_json, load_json, begin_time, time_scale, storage_begin_jso
     #     'q_hp':[q_hp[i].x for i in range(period)],
     #     'q_load':q_load,
     # }
-    dict_plot = {
-        # 'hour':[i+1 for i in range(period)],
-        # # operational day cost
-        # 'opex_without_opt':[h_pur[i].x*hydrogen_price+max(0,p_load[i]-p_pv[i].x)*lambda_ele_in[i] for i in range(period)],# 未经优化的运行成本
-
-        # #ele
-        # 'p_fc':[p_fc[i].x for i in range(period)],#燃料电池
-
-        # 'p_hp':[z_hp[i].x for i in range(period)],#热泵
-        # 'p_eb':[p_eb[i].x for i in range(period)],#电锅炉
-        # # 'p_el':[p_el[i].x for i in range(period)],
-        # #hydrogen
-        # # 'h_hst':[h_sto[i].x for i in range(period)],
-        # #thermal
-        # 't_ht':[t_ht[i].x for i in range(period)],  
+    dict_load = {
+        'p_load': p_load,
+        'g_load': g_load,
+        'q_load': q_load,
+        'pv_generation': pv_generation,
+        't_env': t_env,
+        'g_func': g_func
     }
-    return dict_control, dict_plot
+    return dict_control, dict_load
 
 
 if __name__ == '__main__':
