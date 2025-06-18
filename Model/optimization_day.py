@@ -66,11 +66,11 @@ def to_csv(res, filename):
         else:
             #print(items[i])
             total.write(1,i,float(res[items[i]]))
-    wb.save("Output/"+filename+".xls")
+    wb.save("Output\\"+filename+".xls")
 
 
 # TODO: 添加选取日期的输入参数
-def get_data(data_file="Input_720/yulin_water_load.xlsx"):
+def get_data(data_file="input_720\yulin_water_load.xlsx"):
     """获取负荷数据
 
     Args:
@@ -94,6 +94,8 @@ def get_data(data_file="Input_720/yulin_water_load.xlsx"):
     Q_DE = np.array([Q_DE[24 * (15 + d_date[i]):24 * (15 + d_date[i] + 2)] for i in range(12)]).flatten().tolist()
     H_DE = np.array([H_DE[24 * (15 + d_date[i]):24 * (15 + d_date[i] + 2)] for i in range(12)]).flatten().tolist()
     R_PV = np.array([R_PV[24 * (15 + d_date[i]):24 * (15 + d_date[i] + 2)] for i in range(12)]).flatten().tolist()
+
+
     G_DE = [g*0.8 if g>2000 else g for g in G_DE]
     G_DE = [g*0.8 for g in G_DE]
     # R_PV = np.array([0.01 for _ in range(24)])
@@ -145,11 +147,19 @@ def opt_day(parameter_json, load_json, begin_time, time_scale, storage_begin_jso
         eta_pump_eb = parameter_json['device']['eb']['eta_pump']
         # AHP, 空气源热泵
         eta_ahp = parameter_json['device']['ahp']['eta_ahp']
+            # 拟合得到的ahp cop计算式：cop=k_t_env*t_env + k_t_out*t_out
+        k_t_env = parameter_json['device']['ahp']['k_t_env']
+        k_t_ahp = parameter_json['device']['ahp']['k_t_ahp']
+        eta_ahp_base = parameter_json['device']['ahp']['eta_ahp_base']
         eta_pump_ahp = parameter_json['device']['ahp']['eta_pump']
         # FC, 燃料电池
         eta_fc_p = parameter_json['device']['fc']['eta_p']
         eta_fc_g = parameter_json['device']['fc']['eta_g']
         eta_pump_fc = parameter_json['device']['fc']['eta_pump']
+        g_p_ratio_200 = parameter_json['device']['fc']['power_200']['g_p_ratio']
+        g_p_ratio_400 = parameter_json['device']['fc']['power_400']['g_p_ratio']
+        g_p_ratio_600 = parameter_json['device']['fc']['power_600']['g_p_ratio']
+
         # HT, 储热罐
         eta_ht_loss = parameter_json['device']['ht']['eta_loss']
         # TODO: 是否需要储热罐循环泵功率？水箱不用
@@ -302,6 +312,7 @@ def opt_day(parameter_json, load_json, begin_time, time_scale, storage_begin_jso
     t_gtw_in = [model.addVar(vtype=GRB.CONTINUOUS, lb=t_gtw_in_min, name=f"t_gtw_in[{t}]") for t in range(period)]  # 地热井进水温度
     t_gtw_out = [model.addVar(vtype=GRB.CONTINUOUS, lb=t_gtw_in_min, name=f"t_gtw_out[{t}]") for t in range(period)]  # 地热井出水温度
     t_b = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"t_b[{t}]") for t in range(period)]  # 地热井温度
+    g_gtw = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"g_gtw[{t}]") for t in range(period)]
     # EB
     p_eb = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, ub=p_eb_max,
                          name=f"p_eb[{t}]") for t in range(period)]
@@ -319,6 +330,7 @@ def opt_day(parameter_json, load_json, begin_time, time_scale, storage_begin_jso
     t_ahp = [model.addVar(vtype=GRB.CONTINUOUS, lb=t_ahp_lb,ub=t_ahp_ub, name=f"t_ahp[{t}]") for t in range(period)]
     m_ahp = [model.addVar(vtype=GRB.CONTINUOUS, lb=m_ahp_lb, ub=m_ahp_ub,
                           name=f"m_ahp[{t}]") for t in range(period)]
+    eta_ahp = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"cop_ahp[{t}]") for t in range(period)]  # 空气源热泵性能系数
     p_pump_ahp = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"p_pump_ahp[{t}]") for t in range(period)]
     # FC
     m_h_fc = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"m_h_fc[{t}]") for t in range(period)]  # 燃料电池耗氢量
@@ -364,11 +376,11 @@ def opt_day(parameter_json, load_json, begin_time, time_scale, storage_begin_jso
                      for t in range(period))
     # TODO: 确认 M^{DE} 和 t^{MP} 指代是否正确
     # TODO: 要添加工况约束吧，不然有问题
-    model.addConstrs(z_ghp_de[t]*g_ghp_de[t] + g_eb_de[t] + g_ahp[t] + g_fc_de[t] + g_ht[t]
+    model.addConstrs(z_ghp_de[t]*g_ghp_de[t] + z_eb_de[t]*g_eb_de[t] + g_ahp[t] + z_fc_de[t]*g_fc_de[t] + g_ht[t]
                      == g_load[t] + c_water * m_de[t] * (t_de[t + 1] - t_de[t])
                      for t in range(period - 1))
     # TODO: 末时刻请果哥确认
-    model.addConstr(z_ghp_de[-1]*g_ghp_de[-1] + g_eb_de[-1] + g_ahp[-1] + g_fc_de[-1] + g_ht[-1]
+    model.addConstr(z_ghp_de[-1]*g_ghp_de[-1] + z_eb_de[-1]*g_eb_de[-1] + g_ahp[-1] + z_fc_de[-1]*g_fc_de[-1] + g_ht[-1]
                     == g_load[-1] + c_water * m_de[-1] * (t_de[0] - t_de[-1]))
     model.addConstrs(h_pur[t] == m_h_fc[t] for t in range(period))  # 氢源购氢量等于燃料电池耗氢量
     # 流量平衡
@@ -403,32 +415,42 @@ def opt_day(parameter_json, load_json, begin_time, time_scale, storage_begin_jso
     # TODO: t^{DE} 是固定值吗？目前先按变量建模。变量
     model.addConstrs(g_ghp[t] == c_water * m_ghp[t] * (t_ghp[t] - t_de[t]) for t in range(period))
     model.addConstrs(p_pump_ghp[t] == eta_pump_ghp * m_ghp[t] for t in range(period))
+    model.addConstrs(g_gtw[t]==g_ghp[t] - z_ghp[t] * p_ghp_max for t in range(period))
     # TODO: 缺乏 GTW 约束描述，目前暂未建立 t^{GTW} 的关系
-    for i in range(period):
-        model.addConstr(eta_ghp[i]==2+0.1209*t_gtw_out[i])
-        model.addConstr(g_ghp[i]==c_water*m_gtw*(t_gtw_out[i]-t_gtw_in[i]))
-        model.addConstr(t_gtw_out[i]==0.2*(t_gtw_out[i]-t_b[i])+t_b[i])
-        model.addConstr(t_b[i]==11.5-(1000/(2*np.pi*2.07*200*192))*gp.quicksum((g_ghp[j]-g_ghp[j-1])*g_func[i-j] for j in range(i+1)))
+    for t in range(period):
+        model.addConstr(eta_ghp[t]==2+0.1209*t_gtw_out[t])
+        model.addConstr(g_gtw[t]==c_water*m_gtw*(t_gtw_out[t]-t_gtw_in[t]))
+        model.addConstr(t_gtw_out[t]==0.2*(t_gtw_out[t]-t_b[t])+t_b[t])
+    # TODO: 保证地热井约束起作用的关键意义不明约束
+    model.addConstr(g_gtw[0]==0)
+    model.addConstr(t_b[0]==11.5-(1000/(2*np.pi*2.07*200*192))*(g_gtw[0])*g_func[0])
+    for t in range(1,period):
+        model.addConstr(t_b[t]==11.5-(1000/(2*np.pi*2.07*200*192))*gp.quicksum((g_gtw[j]-g_gtw[j-1])*g_func[t-j] for j in range(t+1)))
 
     # EB
     model.addConstrs(g_eb[t] == eta_eb * p_eb[t] for t in range(period))
     model.addConstrs(g_eb[t] == c_water * m_eb[t] * (t_eb[t] - t_de[t]) for t in range(period))
     model.addConstrs(p_pump_eb[t] == eta_pump_eb * m_eb[t] for t in range(period))
     # AHP
-    model.addConstrs(g_ahp[t] == eta_ahp * p_ahp[t] for t in range(period))
+    # TODO: 修改了空气源热泵的效率计算
+    model.addConstrs(eta_ahp[t] == eta_ahp_base + k_t_env * t_env[t] + k_t_ahp * t_ahp[t] for t in range(period))
+    model.addConstrs(g_ahp[t] == eta_ahp[t] * p_ahp[t] for t in range(period))
     model.addConstrs(g_ahp[t] == c_water * m_ahp[t] * (t_ahp[t] - t_de[t]) for t in range(period))
     model.addConstrs(p_pump_ahp[t] == eta_pump_ahp * m_ahp[t] for t in range(period))
     # FC
+    # TODO: 修改了FC热计算
     model.addConstrs(p_fc[t] == eta_fc_p * m_h_fc[t] for t in range(period))
-    model.addConstrs(g_fc[t] == eta_fc_g * m_h_fc[t] for t in range(period))
+    for t in range(period):
+        model.addGenConstrPWL(p_fc[t], g_fc[t], [0, 200, 400, 600], [0, g_p_ratio_200 * 200, g_p_ratio_400 * 400, g_p_ratio_600 * 600])
+    # model.addConstrs(g_fc[t] == eta_fc_g * m_h_fc[t] for t in range(period))
     model.addConstrs(g_fc[t] == c_water * m_fc[t] * (t_fc[t] - t_de[t]) for t in range(period))
     model.addConstrs(p_pump_fc[t] == eta_pump_fc * m_fc[t] for t in range(period))
     # HT
     # TODO: 文档中该公式是否有问题？
-    model.addConstrs(z_ghp_ht[t]*g_ghp_ht[t] + g_eb_ht[t] + g_fc_ht[t] - g_ht[t]
+    model.addConstrs(z_ghp_ht[t]*g_ghp_ht[t] + z_eb_ht[t]*g_eb_ht[t] + z_fc_ht[t]*g_fc_ht[t] - g_ht[t]
                      == c_water * m_ht_sto * (t_ht_sto[t + 1] - t_ht_sto[t]) + eta_ht_loss * (t_ht_sto[t] - t_env[t])
                      for t in range(period - 1))
-    model.addConstr(z_ghp_ht[-1]*g_ghp_ht[-1] + g_eb_ht[-1] + g_fc_ht[-1] - g_ht[-1]
+    model.addConstr(z_ghp_ht[-1]*g_ghp_ht[-1] + z_eb_ht[t]*g_eb_ht[-1] + z_fc_ht[t]*g_fc_ht[-1] - g_ht[-1]
                     == c_water * m_ht_sto * (t_ht_sto[0] - t_ht_sto[-1]) + eta_ht_loss * (t_ht_sto[-1] - t_env[23]))
     # TODO: 建模可否省略为 g^{HW} = c * m^{HW} * (t^{HW} - t^{DE})？可以
     model.addConstrs(g_ht[t] == c_water * m_ht[t] * (t_ht[t] - t_de[t])
@@ -461,7 +483,7 @@ def opt_day(parameter_json, load_json, begin_time, time_scale, storage_begin_jso
     # 设置目标函数
     model.setObjective(opex, GRB.MINIMIZE)
     model.params.NonConvex = 2
-    model.params.MIPGap = 0.02
+    model.params.MIPGap = 0.001
     # model.params.TimeLimit=300
     model.Params.LogFile = "testlog.log"
 
@@ -513,6 +535,7 @@ def opt_day(parameter_json, load_json, begin_time, time_scale, storage_begin_jso
         "m_eb": [v.x for v in m_eb],
         "p_pump_eb": [v.x for v in p_pump_eb],
         "p_ahp": [v.x for v in p_ahp],
+        "cop_ahp": [v.x for v in eta_ahp],
         "g_ahp": [v.x for v in g_ahp],
         "t_ahp": [v.x for v in t_ahp],
         "m_ahp": [v.x for v in m_ahp],

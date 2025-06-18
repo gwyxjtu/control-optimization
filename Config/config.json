@@ -34,17 +34,17 @@
                 "theta_ex":0.85,
                 "power_200":
                 {
-                    "g_p_ratio":1,
+                    "g_p_ratio":1.1583,
                     "theta_ex":0.85
                 },
                 "power_400":
                 {
-                    "g_p_ratio":1.25,
+                    "g_p_ratio":1.1911,
                     "theta_ex":0.85
                 },
                 "power_600":
                 {
-                    "g_p_ratio":1.55,
+                    "g_p_ratio":1.1279,
                     "theta_ex":0.85
                 },
                 "comment":"fuel cell"
@@ -125,6 +125,9 @@
                 "water_min":50,
                 "t_max":55,
                 "t_min":35,
+                "k_t_env":0.0486,
+                "k_t_ahp":-0.0519,
+                "eta_ahp_base":5.2304,
                 "eta_ahp":2.05,
                 "eta_pump":0.2,
                 "beta_hpq":6,
