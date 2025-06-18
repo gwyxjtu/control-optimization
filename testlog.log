@@ -100,3 +100,1141 @@ Solution count 10: 45449.1 46674 48896.5 ... 120474
 
 Solve interrupted
 Best objective 4.544910655375e+04, best bound 3.658856630904e+04, gap 19.4955%
+
+Gurobi 12.0.2 (win64) logging started Mon Jun 16 22:24:52 2025
+
+Set parameter LogFile to value "testlog.log"
+Gurobi Optimizer version 12.0.2 build v12.0.2rc0 (win64 - Windows 10.0 (19045.2))
+
+CPU model: Intel(R) Core(TM) i9-14900KF, instruction set [SSE2|AVX|AVX2]
+Thread count: 24 physical cores, 32 logical processors, using up to 32 threads
+
+Non-default parameters:
+MIPGap  0.02
+NonConvex  2
+
+Optimize a model with 2761 rows, 6001 columns and 8401 nonzeros
+Model fingerprint: 0x3f06e857
+Model has 1320 quadratic constraints
+Variable types: 5041 continuous, 960 integer (960 binary)
+Coefficient statistics:
+  Matrix range     [2e-01, 1e+12]
+  QMatrix range    [1e+00, 1e+00]
+  QLMatrix range   [5e-02, 1e+00]
+  Objective range  [1e+00, 1e+00]
+  Bounds range     [1e+00, 3e+03]
+  RHS range        [1e-03, 1e+12]
+  QRHS range       [6e+02, 2e+03]
+Warning: Model contains large matrix coefficient range
+Warning: Model contains large rhs
+         Consider reformulating model or setting NumericFocus parameter
+         to avoid numerical issues.
+Presolve removed 1801 rows and 1921 columns
+Presolve time: 0.01s
+Presolved: 9960 rows, 7801 columns, 25600 nonzeros
+Presolved model has 1440 SOS constraint(s)
+Presolved model has 1560 bilinear constraint(s)
+Warning: Model contains variables with very large bounds participating
+         in product terms.
+         Presolve was not able to compute smaller bounds for these variables.
+         Consider bounding these variables or reformulating the model.
+
+
+Solving non-convex MIQCP
+
+Variable types: 6241 continuous, 1560 integer (1560 binary)
+
+Root relaxation: objective 5.507179e+03, 4251 iterations, 0.03 seconds (0.04 work units)
+
+    Nodes    |    Current Node    |     Objective Bounds      |     Work
+ Expl Unexpl |  Obj  Depth IntInf | Incumbent    BestBd   Gap | It/Node Time
+
+     0     0 5507.17902    0 1021          - 5507.17902      -     -    0s
+     0     0 5507.17902    0 1003          - 5507.17902      -     -    0s
+     0     0 5507.17902    0  997          - 5507.17902      -     -    0s
+     0     0 5507.17902    0  997          - 5507.17902      -     -    0s
+     0     0 5507.17902    0 1025          - 5507.17902      -     -    0s
+     0     0 5507.17902    0 1027          - 5507.17902      -     -    0s
+     0     0 5507.17902    0  970          - 5507.17902      -     -    0s
+     0     0 5507.17902    0  969          - 5507.17902      -     -    0s
+     0     0 5507.17902    0  971          - 5507.17902      -     -    0s
+     0     0 5507.17902    0  968          - 5507.17902      -     -    0s
+     0     0 5507.17902    0  967          - 5507.17902      -     -    0s
+     0     2 5507.17902    0  967          - 5507.17902      -     -    0s
+
+Cutting planes:
+  Gomory: 3
+  Implied bound: 16
+  Clique: 4
+  Flow cover: 10
+  RLT: 30
+  Relax-and-lift: 14
+
+Explored 15 nodes (4846 simplex iterations) in 1.00 seconds (0.91 work units)
+Thread count was 32 (of 32 available processors)
+
+Solution count 0
+
+Model is infeasible
+Best objective -, best bound -, gap -
+Gurobi Optimizer version 12.0.2 build v12.0.2rc0 (win64 - Windows 10.0 (19045.2))
+
+CPU model: Intel(R) Core(TM) i9-14900KF, instruction set [SSE2|AVX|AVX2]
+Thread count: 24 physical cores, 32 logical processors, using up to 32 threads
+
+Non-default parameters:
+MIPGap  0.02
+NonConvex  2
+
+
+Computing Irreducible Inconsistent Subsystem (IIS)...
+
+           Constraints          |            Bounds           |  Runtime
+      Min       Max     Guess   |   Min       Max     Guess   |
+--------------------------------------------------------------------------
+        0      4081         -         0      6721         -           0s
+        0      4074         -         0      6720         -           6s
+       16        19        19         0        48         -          10s
+       16        19        19         0        48         -          16s
+
+Gurobi 12.0.2 (win64) logging started Mon Jun 16 22:28:06 2025
+
+Set parameter LogFile to value "testlog.log"
+Gurobi Optimizer version 12.0.2 build v12.0.2rc0 (win64 - Windows 10.0 (19045.2))
+
+CPU model: Intel(R) Core(TM) i9-14900KF, instruction set [SSE2|AVX|AVX2]
+Thread count: 24 physical cores, 32 logical processors, using up to 32 threads
+
+Non-default parameters:
+MIPGap  0.02
+NonConvex  2
+
+Optimize a model with 2761 rows, 6001 columns and 8401 nonzeros
+Model fingerprint: 0x3f06e857
+Model has 1320 quadratic constraints
+Variable types: 5041 continuous, 960 integer (960 binary)
+Coefficient statistics:
+  Matrix range     [2e-01, 1e+12]
+  QMatrix range    [1e+00, 1e+00]
+  QLMatrix range   [5e-02, 1e+00]
+  Objective range  [1e+00, 1e+00]
+  Bounds range     [1e+00, 3e+03]
+  RHS range        [1e-03, 1e+12]
+  QRHS range       [6e+02, 2e+03]
+Warning: Model contains large matrix coefficient range
+Warning: Model contains large rhs
+         Consider reformulating model or setting NumericFocus parameter
+         to avoid numerical issues.
+Presolve removed 1801 rows and 1921 columns
+Presolve time: 0.01s
+Presolved: 9960 rows, 7801 columns, 25600 nonzeros
+Presolved model has 1440 SOS constraint(s)
+Presolved model has 1560 bilinear constraint(s)
+Warning: Model contains variables with very large bounds participating
+         in product terms.
+         Presolve was not able to compute smaller bounds for these variables.
+         Consider bounding these variables or reformulating the model.
+
+
+Solving non-convex MIQCP
+
+Variable types: 6241 continuous, 1560 integer (1560 binary)
+
+Root relaxation: objective 5.507179e+03, 4251 iterations, 0.03 seconds (0.04 work units)
+
+    Nodes    |    Current Node    |     Objective Bounds      |     Work
+ Expl Unexpl |  Obj  Depth IntInf | Incumbent    BestBd   Gap | It/Node Time
+
+     0     0 5507.17902    0 1021          - 5507.17902      -     -    0s
+     0     0 5507.17902    0 1003          - 5507.17902      -     -    0s
+     0     0 5507.17902    0  997          - 5507.17902      -     -    0s
+     0     0 5507.17902    0  997          - 5507.17902      -     -    0s
+     0     0 5507.17902    0 1025          - 5507.17902      -     -    0s
+     0     0 5507.17902    0 1027          - 5507.17902      -     -    0s
+     0     0 5507.17902    0  970          - 5507.17902      -     -    0s
+     0     0 5507.17902    0  969          - 5507.17902      -     -    0s
+     0     0 5507.17902    0  971          - 5507.17902      -     -    0s
+     0     0 5507.17902    0  968          - 5507.17902      -     -    0s
+     0     0 5507.17902    0  967          - 5507.17902      -     -    0s
+     0     2 5507.17902    0  967          - 5507.17902      -     -    0s
+
+Cutting planes:
+  Gomory: 3
+  Implied bound: 16
+  Clique: 4
+  Flow cover: 10
+  RLT: 30
+  Relax-and-lift: 14
+
+Explored 15 nodes (4846 simplex iterations) in 0.99 seconds (0.91 work units)
+Thread count was 32 (of 32 available processors)
+
+Solution count 0
+
+Model is infeasible
+Best objective -, best bound -, gap -
+Gurobi Optimizer version 12.0.2 build v12.0.2rc0 (win64 - Windows 10.0 (19045.2))
+
+CPU model: Intel(R) Core(TM) i9-14900KF, instruction set [SSE2|AVX|AVX2]
+Thread count: 24 physical cores, 32 logical processors, using up to 32 threads
+
+Non-default parameters:
+MIPGap  0.02
+NonConvex  2
+
+
+Computing Irreducible Inconsistent Subsystem (IIS)...
+
+           Constraints          |            Bounds           |  Runtime
+      Min       Max     Guess   |   Min       Max     Guess   |
+--------------------------------------------------------------------------
+        0      4081         -         0      6721         -           0s
+        0      4074         -         0      6720         -           5s
+       16        19        19         0        48         -          10s
+       16        19        19         0        48         -          15s
+
+Gurobi 12.0.2 (win64) logging started Mon Jun 16 22:29:38 2025
+
+Set parameter LogFile to value "testlog.log"
+Gurobi Optimizer version 12.0.2 build v12.0.2rc0 (win64 - Windows 10.0 (19045.2))
+
+CPU model: Intel(R) Core(TM) i9-14900KF, instruction set [SSE2|AVX|AVX2]
+Thread count: 24 physical cores, 32 logical processors, using up to 32 threads
+
+Non-default parameters:
+MIPGap  0.02
+NonConvex  2
+
+Optimize a model with 2761 rows, 6001 columns and 8401 nonzeros
+Model fingerprint: 0x3f06e857
+Model has 1320 quadratic constraints
+Variable types: 5041 continuous, 960 integer (960 binary)
+Coefficient statistics:
+  Matrix range     [2e-01, 1e+12]
+  QMatrix range    [1e+00, 1e+00]
+  QLMatrix range   [5e-02, 1e+00]
+  Objective range  [1e+00, 1e+00]
+  Bounds range     [1e+00, 3e+03]
+  RHS range        [1e-03, 1e+12]
+  QRHS range       [6e+02, 2e+03]
+Warning: Model contains large matrix coefficient range
+Warning: Model contains large rhs
+         Consider reformulating model or setting NumericFocus parameter
+         to avoid numerical issues.
+Presolve removed 1801 rows and 1921 columns
+Presolve time: 0.01s
+Presolved: 9960 rows, 7801 columns, 25600 nonzeros
+Presolved model has 1440 SOS constraint(s)
+Presolved model has 1560 bilinear constraint(s)
+Warning: Model contains variables with very large bounds participating
+         in product terms.
+         Presolve was not able to compute smaller bounds for these variables.
+         Consider bounding these variables or reformulating the model.
+
+
+Solving non-convex MIQCP
+
+Variable types: 6241 continuous, 1560 integer (1560 binary)
+
+Root relaxation: objective 5.507179e+03, 4251 iterations, 0.02 seconds (0.04 work units)
+
+    Nodes    |    Current Node    |     Objective Bounds      |     Work
+ Expl Unexpl |  Obj  Depth IntInf | Incumbent    BestBd   Gap | It/Node Time
+
+     0     0 5507.17902    0 1021          - 5507.17902      -     -    0s
+     0     0 5507.17902    0 1003          - 5507.17902      -     -    0s
+     0     0 5507.17902    0  997          - 5507.17902      -     -    0s
+     0     0 5507.17902    0  997          - 5507.17902      -     -    0s
+     0     0 5507.17902    0 1025          - 5507.17902      -     -    0s
+     0     0 5507.17902    0 1027          - 5507.17902      -     -    0s
+     0     0 5507.17902    0  970          - 5507.17902      -     -    0s
+     0     0 5507.17902    0  969          - 5507.17902      -     -    0s
+     0     0 5507.17902    0  971          - 5507.17902      -     -    0s
+     0     0 5507.17902    0  968          - 5507.17902      -     -    0s
+     0     0 5507.17902    0  967          - 5507.17902      -     -    0s
+     0     2 5507.17902    0  967          - 5507.17902      -     -    0s
+
+Cutting planes:
+  Gomory: 3
+  Implied bound: 16
+  Clique: 4
+  Flow cover: 10
+  RLT: 30
+  Relax-and-lift: 14
+
+Explored 15 nodes (4846 simplex iterations) in 1.01 seconds (0.91 work units)
+Thread count was 32 (of 32 available processors)
+
+Solution count 0
+
+Model is infeasible
+Best objective -, best bound -, gap -
+Gurobi Optimizer version 12.0.2 build v12.0.2rc0 (win64 - Windows 10.0 (19045.2))
+
+CPU model: Intel(R) Core(TM) i9-14900KF, instruction set [SSE2|AVX|AVX2]
+Thread count: 24 physical cores, 32 logical processors, using up to 32 threads
+
+Non-default parameters:
+MIPGap  0.02
+NonConvex  2
+
+
+Computing Irreducible Inconsistent Subsystem (IIS)...
+
+           Constraints          |            Bounds           |  Runtime
+      Min       Max     Guess   |   Min       Max     Guess   |
+--------------------------------------------------------------------------
+        0      4081         -         0      6721         -           0s
+        0      4074         -         0      6720         -           5s
+       16        19        19         0        48         -          10s
+       16        19        19         0        48         -          15s
+
+Gurobi 12.0.2 (win64) logging started Mon Jun 16 22:31:02 2025
+
+Set parameter LogFile to value "testlog.log"
+Gurobi Optimizer version 12.0.2 build v12.0.2rc0 (win64 - Windows 10.0 (19045.2))
+
+CPU model: Intel(R) Core(TM) i9-14900KF, instruction set [SSE2|AVX|AVX2]
+Thread count: 24 physical cores, 32 logical processors, using up to 32 threads
+
+Non-default parameters:
+MIPGap  0.02
+NonConvex  2
+
+Optimize a model with 2761 rows, 6001 columns and 8401 nonzeros
+Model fingerprint: 0x3f06e857
+Model has 1320 quadratic constraints
+Variable types: 5041 continuous, 960 integer (960 binary)
+Coefficient statistics:
+  Matrix range     [2e-01, 1e+12]
+  QMatrix range    [1e+00, 1e+00]
+  QLMatrix range   [5e-02, 1e+00]
+  Objective range  [1e+00, 1e+00]
+  Bounds range     [1e+00, 3e+03]
+  RHS range        [1e-03, 1e+12]
+  QRHS range       [6e+02, 2e+03]
+Warning: Model contains large matrix coefficient range
+Warning: Model contains large rhs
+         Consider reformulating model or setting NumericFocus parameter
+         to avoid numerical issues.
+Presolve removed 1801 rows and 1921 columns
+Presolve time: 0.01s
+Presolved: 9960 rows, 7801 columns, 25600 nonzeros
+Presolved model has 1440 SOS constraint(s)
+Presolved model has 1560 bilinear constraint(s)
+Warning: Model contains variables with very large bounds participating
+         in product terms.
+         Presolve was not able to compute smaller bounds for these variables.
+         Consider bounding these variables or reformulating the model.
+
+
+Solving non-convex MIQCP
+
+Variable types: 6241 continuous, 1560 integer (1560 binary)
+
+Root relaxation: objective 5.507179e+03, 4251 iterations, 0.02 seconds (0.04 work units)
+
+    Nodes    |    Current Node    |     Objective Bounds      |     Work
+ Expl Unexpl |  Obj  Depth IntInf | Incumbent    BestBd   Gap | It/Node Time
+
+     0     0 5507.17902    0 1021          - 5507.17902      -     -    0s
+     0     0 5507.17902    0 1003          - 5507.17902      -     -    0s
+     0     0 5507.17902    0  997          - 5507.17902      -     -    0s
+     0     0 5507.17902    0  997          - 5507.17902      -     -    0s
+     0     0 5507.17902    0 1025          - 5507.17902      -     -    0s
+     0     0 5507.17902    0 1027          - 5507.17902      -     -    0s
+     0     0 5507.17902    0  970          - 5507.17902      -     -    0s
+     0     0 5507.17902    0  969          - 5507.17902      -     -    0s
+     0     0 5507.17902    0  971          - 5507.17902      -     -    0s
+     0     0 5507.17902    0  968          - 5507.17902      -     -    0s
+     0     0 5507.17902    0  967          - 5507.17902      -     -    0s
+     0     2 5507.17902    0  967          - 5507.17902      -     -    0s
+
+Cutting planes:
+  Gomory: 3
+  Implied bound: 16
+  Clique: 4
+  Flow cover: 10
+  RLT: 30
+  Relax-and-lift: 14
+
+Explored 15 nodes (4846 simplex iterations) in 1.00 seconds (0.91 work units)
+Thread count was 32 (of 32 available processors)
+
+Solution count 0
+
+Model is infeasible
+Best objective -, best bound -, gap -
+Gurobi Optimizer version 12.0.2 build v12.0.2rc0 (win64 - Windows 10.0 (19045.2))
+
+CPU model: Intel(R) Core(TM) i9-14900KF, instruction set [SSE2|AVX|AVX2]
+Thread count: 24 physical cores, 32 logical processors, using up to 32 threads
+
+Non-default parameters:
+MIPGap  0.02
+NonConvex  2
+
+
+Computing Irreducible Inconsistent Subsystem (IIS)...
+
+           Constraints          |            Bounds           |  Runtime
+      Min       Max     Guess   |   Min       Max     Guess   |
+--------------------------------------------------------------------------
+        0      4081         -         0      6721         -           0s
+        0      4074         -         0      6720         -           6s
+
+Gurobi 12.0.2 (win64) logging started Mon Jun 16 22:35:38 2025
+
+Set parameter LogFile to value "testlog.log"
+Gurobi Optimizer version 12.0.2 build v12.0.2rc0 (win64 - Windows 10.0 (19045.2))
+
+CPU model: Intel(R) Core(TM) i9-14900KF, instruction set [SSE2|AVX|AVX2]
+Thread count: 24 physical cores, 32 logical processors, using up to 32 threads
+
+Non-default parameters:
+MIPGap  0.02
+NonConvex  2
+
+Optimize a model with 2761 rows, 6001 columns and 8401 nonzeros
+Model fingerprint: 0x3f06e857
+Model has 1320 quadratic constraints
+Variable types: 5041 continuous, 960 integer (960 binary)
+Coefficient statistics:
+  Matrix range     [2e-01, 1e+12]
+  QMatrix range    [1e+00, 1e+00]
+  QLMatrix range   [5e-02, 1e+00]
+  Objective range  [1e+00, 1e+00]
+  Bounds range     [1e+00, 3e+03]
+  RHS range        [1e-03, 1e+12]
+  QRHS range       [6e+02, 2e+03]
+Warning: Model contains large matrix coefficient range
+Warning: Model contains large rhs
+         Consider reformulating model or setting NumericFocus parameter
+         to avoid numerical issues.
+Presolve removed 1801 rows and 1921 columns
+Presolve time: 0.01s
+Presolved: 9960 rows, 7801 columns, 25600 nonzeros
+Presolved model has 1440 SOS constraint(s)
+Presolved model has 1560 bilinear constraint(s)
+Warning: Model contains variables with very large bounds participating
+         in product terms.
+         Presolve was not able to compute smaller bounds for these variables.
+         Consider bounding these variables or reformulating the model.
+
+
+Solving non-convex MIQCP
+
+Variable types: 6241 continuous, 1560 integer (1560 binary)
+
+Root relaxation: objective 5.507179e+03, 4251 iterations, 0.02 seconds (0.04 work units)
+
+    Nodes    |    Current Node    |     Objective Bounds      |     Work
+ Expl Unexpl |  Obj  Depth IntInf | Incumbent    BestBd   Gap | It/Node Time
+
+     0     0 5507.17902    0 1021          - 5507.17902      -     -    0s
+     0     0 5507.17902    0 1003          - 5507.17902      -     -    0s
+     0     0 5507.17902    0  997          - 5507.17902      -     -    0s
+     0     0 5507.17902    0  997          - 5507.17902      -     -    0s
+     0     0 5507.17902    0 1025          - 5507.17902      -     -    0s
+     0     0 5507.17902    0 1027          - 5507.17902      -     -    0s
+     0     0 5507.17902    0  970          - 5507.17902      -     -    0s
+     0     0 5507.17902    0  969          - 5507.17902      -     -    0s
+     0     0 5507.17902    0  971          - 5507.17902      -     -    0s
+     0     0 5507.17902    0  968          - 5507.17902      -     -    0s
+     0     0 5507.17902    0  967          - 5507.17902      -     -    0s
+     0     2 5507.17902    0  967          - 5507.17902      -     -    0s
+
+Cutting planes:
+  Gomory: 3
+  Implied bound: 16
+  Clique: 4
+  Flow cover: 10
+  RLT: 30
+  Relax-and-lift: 14
+
+Explored 15 nodes (4846 simplex iterations) in 1.00 seconds (0.91 work units)
+Thread count was 32 (of 32 available processors)
+
+Solution count 0
+
+Model is infeasible
+Best objective -, best bound -, gap -
+Gurobi Optimizer version 12.0.2 build v12.0.2rc0 (win64 - Windows 10.0 (19045.2))
+
+CPU model: Intel(R) Core(TM) i9-14900KF, instruction set [SSE2|AVX|AVX2]
+Thread count: 24 physical cores, 32 logical processors, using up to 32 threads
+
+Non-default parameters:
+MIPGap  0.02
+NonConvex  2
+
+
+Computing Irreducible Inconsistent Subsystem (IIS)...
+
+           Constraints          |            Bounds           |  Runtime
+      Min       Max     Guess   |   Min       Max     Guess   |
+--------------------------------------------------------------------------
+        0      4081         -         0      6721         -           0s
+        0      4074         -         0      6720         -           5s
+       16        19        19         0        48         -          10s
+       16        19        19         0        48         -          16s
+
+Gurobi 12.0.2 (win64) logging started Mon Jun 16 22:36:35 2025
+
+Set parameter LogFile to value "testlog.log"
+Gurobi Optimizer version 12.0.2 build v12.0.2rc0 (win64 - Windows 10.0 (19045.2))
+
+CPU model: Intel(R) Core(TM) i9-14900KF, instruction set [SSE2|AVX|AVX2]
+Thread count: 24 physical cores, 32 logical processors, using up to 32 threads
+
+Non-default parameters:
+MIPGap  0.02
+NonConvex  2
+
+Optimize a model with 2761 rows, 6001 columns and 8401 nonzeros
+Model fingerprint: 0x3f06e857
+Model has 1320 quadratic constraints
+Variable types: 5041 continuous, 960 integer (960 binary)
+Coefficient statistics:
+  Matrix range     [2e-01, 1e+12]
+  QMatrix range    [1e+00, 1e+00]
+  QLMatrix range   [5e-02, 1e+00]
+  Objective range  [1e+00, 1e+00]
+  Bounds range     [1e+00, 3e+03]
+  RHS range        [1e-03, 1e+12]
+  QRHS range       [6e+02, 2e+03]
+Warning: Model contains large matrix coefficient range
+Warning: Model contains large rhs
+         Consider reformulating model or setting NumericFocus parameter
+         to avoid numerical issues.
+Presolve removed 1801 rows and 1921 columns
+Presolve time: 0.01s
+Presolved: 9960 rows, 7801 columns, 25600 nonzeros
+Presolved model has 1440 SOS constraint(s)
+Presolved model has 1560 bilinear constraint(s)
+Warning: Model contains variables with very large bounds participating
+         in product terms.
+         Presolve was not able to compute smaller bounds for these variables.
+         Consider bounding these variables or reformulating the model.
+
+
+Solving non-convex MIQCP
+
+Variable types: 6241 continuous, 1560 integer (1560 binary)
+
+Root relaxation: objective 5.507179e+03, 4251 iterations, 0.02 seconds (0.04 work units)
+
+    Nodes    |    Current Node    |     Objective Bounds      |     Work
+ Expl Unexpl |  Obj  Depth IntInf | Incumbent    BestBd   Gap | It/Node Time
+
+     0     0 5507.17902    0 1021          - 5507.17902      -     -    0s
+     0     0 5507.17902    0 1003          - 5507.17902      -     -    0s
+     0     0 5507.17902    0  997          - 5507.17902      -     -    0s
+     0     0 5507.17902    0  997          - 5507.17902      -     -    0s
+     0     0 5507.17902    0 1025          - 5507.17902      -     -    0s
+     0     0 5507.17902    0 1027          - 5507.17902      -     -    0s
+     0     0 5507.17902    0  970          - 5507.17902      -     -    0s
+     0     0 5507.17902    0  969          - 5507.17902      -     -    0s
+     0     0 5507.17902    0  971          - 5507.17902      -     -    0s
+     0     0 5507.17902    0  968          - 5507.17902      -     -    0s
+     0     0 5507.17902    0  967          - 5507.17902      -     -    0s
+     0     2 5507.17902    0  967          - 5507.17902      -     -    0s
+
+Cutting planes:
+  Gomory: 3
+  Implied bound: 16
+  Clique: 4
+  Flow cover: 10
+  RLT: 30
+  Relax-and-lift: 14
+
+Explored 15 nodes (4846 simplex iterations) in 1.04 seconds (0.91 work units)
+Thread count was 32 (of 32 available processors)
+
+Solution count 0
+
+Model is infeasible
+Best objective -, best bound -, gap -
+Gurobi Optimizer version 12.0.2 build v12.0.2rc0 (win64 - Windows 10.0 (19045.2))
+
+CPU model: Intel(R) Core(TM) i9-14900KF, instruction set [SSE2|AVX|AVX2]
+Thread count: 24 physical cores, 32 logical processors, using up to 32 threads
+
+Non-default parameters:
+MIPGap  0.02
+NonConvex  2
+
+
+Computing Irreducible Inconsistent Subsystem (IIS)...
+
+           Constraints          |            Bounds           |  Runtime
+      Min       Max     Guess   |   Min       Max     Guess   |
+--------------------------------------------------------------------------
+        0      4081         -         0      6721         -           0s
+        0      4074         -         0      6720         -           6s
+       16        19        19         0        48         -          10s
+       16        19        19         0        48         -          15s
+
+Gurobi 12.0.2 (win64) logging started Mon Jun 16 22:41:10 2025
+
+Set parameter LogFile to value "testlog.log"
+Gurobi Optimizer version 12.0.2 build v12.0.2rc0 (win64 - Windows 10.0 (19045.2))
+
+CPU model: Intel(R) Core(TM) i9-14900KF, instruction set [SSE2|AVX|AVX2]
+Thread count: 24 physical cores, 32 logical processors, using up to 32 threads
+
+Non-default parameters:
+MIPGap  0.02
+NonConvex  2
+
+Optimize a model with 2761 rows, 6001 columns and 8401 nonzeros
+Model fingerprint: 0x3f06e857
+Model has 1320 quadratic constraints
+Variable types: 5041 continuous, 960 integer (960 binary)
+Coefficient statistics:
+  Matrix range     [2e-01, 1e+12]
+  QMatrix range    [1e+00, 1e+00]
+  QLMatrix range   [5e-02, 1e+00]
+  Objective range  [1e+00, 1e+00]
+  Bounds range     [1e+00, 3e+03]
+  RHS range        [1e-03, 1e+12]
+  QRHS range       [6e+02, 2e+03]
+Warning: Model contains large matrix coefficient range
+Warning: Model contains large rhs
+         Consider reformulating model or setting NumericFocus parameter
+         to avoid numerical issues.
+Presolve removed 1801 rows and 1921 columns
+Presolve time: 0.01s
+Presolved: 9960 rows, 7801 columns, 25600 nonzeros
+Presolved model has 1440 SOS constraint(s)
+Presolved model has 1560 bilinear constraint(s)
+Warning: Model contains variables with very large bounds participating
+         in product terms.
+         Presolve was not able to compute smaller bounds for these variables.
+         Consider bounding these variables or reformulating the model.
+
+
+Solving non-convex MIQCP
+
+Variable types: 6241 continuous, 1560 integer (1560 binary)
+
+Root relaxation: objective 5.507179e+03, 4251 iterations, 0.02 seconds (0.04 work units)
+
+    Nodes    |    Current Node    |     Objective Bounds      |     Work
+ Expl Unexpl |  Obj  Depth IntInf | Incumbent    BestBd   Gap | It/Node Time
+
+     0     0 5507.17902    0 1021          - 5507.17902      -     -    0s
+     0     0 5507.17902    0 1003          - 5507.17902      -     -    0s
+     0     0 5507.17902    0  997          - 5507.17902      -     -    0s
+     0     0 5507.17902    0  997          - 5507.17902      -     -    0s
+     0     0 5507.17902    0 1025          - 5507.17902      -     -    0s
+     0     0 5507.17902    0 1027          - 5507.17902      -     -    0s
+     0     0 5507.17902    0  970          - 5507.17902      -     -    0s
+     0     0 5507.17902    0  969          - 5507.17902      -     -    0s
+     0     0 5507.17902    0  971          - 5507.17902      -     -    0s
+     0     0 5507.17902    0  968          - 5507.17902      -     -    0s
+     0     0 5507.17902    0  967          - 5507.17902      -     -    0s
+     0     2 5507.17902    0  967          - 5507.17902      -     -    0s
+
+Cutting planes:
+  Gomory: 3
+  Implied bound: 16
+  Clique: 4
+  Flow cover: 10
+  RLT: 30
+  Relax-and-lift: 14
+
+Explored 15 nodes (4846 simplex iterations) in 0.97 seconds (0.91 work units)
+Thread count was 32 (of 32 available processors)
+
+Solution count 0
+
+Model is infeasible
+Best objective -, best bound -, gap -
+Gurobi Optimizer version 12.0.2 build v12.0.2rc0 (win64 - Windows 10.0 (19045.2))
+
+CPU model: Intel(R) Core(TM) i9-14900KF, instruction set [SSE2|AVX|AVX2]
+Thread count: 24 physical cores, 32 logical processors, using up to 32 threads
+
+Non-default parameters:
+MIPGap  0.02
+NonConvex  2
+
+
+Computing Irreducible Inconsistent Subsystem (IIS)...
+
+           Constraints          |            Bounds           |  Runtime
+      Min       Max     Guess   |   Min       Max     Guess   |
+--------------------------------------------------------------------------
+        0      4081         -         0      6721         -           0s
+        0      4074         -         0      6720         -           6s
+       16        19        19         0        48         -          10s
+       16        19        19         0        48         -          15s
+       16        19        19         0        48         -          22s
+
+Gurobi 12.0.2 (win64) logging started Tue Jun 17 21:24:51 2025
+
+Set parameter LogFile to value "testlog.log"
+Gurobi Optimizer version 12.0.2 build v12.0.2rc0 (win64 - Windows 10.0 (19045.2))
+
+CPU model: Intel(R) Core(TM) i9-14900KF, instruction set [SSE2|AVX|AVX2]
+Thread count: 24 physical cores, 32 logical processors, using up to 32 threads
+
+Non-default parameters:
+MIPGap  0.02
+NonConvex  2
+
+Optimize a model with 553 rows, 1201 columns and 1681 nonzeros
+Model fingerprint: 0x34069eb7
+Model has 264 quadratic constraints
+Variable types: 1009 continuous, 192 integer (192 binary)
+Coefficient statistics:
+  Matrix range     [2e-01, 1e+12]
+  QMatrix range    [1e+00, 1e+00]
+  QLMatrix range   [5e-02, 1e+00]
+  Objective range  [1e+00, 1e+00]
+  Bounds range     [1e+00, 3e+03]
+  RHS range        [1e-03, 1e+12]
+  QRHS range       [1e+03, 2e+03]
+Warning: Model contains large matrix coefficient range
+Warning: Model contains large rhs
+         Consider reformulating model or setting NumericFocus parameter
+         to avoid numerical issues.
+Presolve removed 361 rows and 385 columns
+Presolve time: 0.00s
+Presolved: 1992 rows, 1561 columns, 5102 nonzeros
+Presolved model has 288 SOS constraint(s)
+Presolved model has 312 bilinear constraint(s)
+Warning: Model contains variables with very large bounds participating
+         in product terms.
+         Presolve was not able to compute smaller bounds for these variables.
+         Consider bounding these variables or reformulating the model.
+
+
+Solving non-convex MIQCP
+
+Variable types: 1249 continuous, 312 integer (312 binary)
+
+Root relaxation: objective 8.813275e+02, 796 iterations, 0.00 seconds (0.01 work units)
+
+    Nodes    |    Current Node    |     Objective Bounds      |     Work
+ Expl Unexpl |  Obj  Depth IntInf | Incumbent    BestBd   Gap | It/Node Time
+
+     0     0  881.32746    0  210          -  881.32746      -     -    0s
+     0     0  881.32746    0  208          -  881.32746      -     -    0s
+     0     0  881.32746    0  214          -  881.32746      -     -    0s
+     0     0  881.32746    0  214          -  881.32746      -     -    0s
+     0     0  881.32746    0  214          -  881.32746      -     -    0s
+     0     0  881.32746    0  230          -  881.32746      -     -    0s
+     0     0  881.32746    0  219          -  881.32746      -     -    0s
+     0     0  881.32746    0  214          -  881.32746      -     -    0s
+     0     0  881.32746    0  218          -  881.32746      -     -    0s
+     0     0  881.32746    0  218          -  881.32746      -     -    0s
+     0     0  881.32746    0  218          -  881.32746      -     -    0s
+     0     0  881.32746    0  218          -  881.32746      -     -    0s
+     0     2  881.32746    0  218          -  881.32746      -     -    0s
+
+Cutting planes:
+  Gomory: 1
+  Implied bound: 9
+  Flow cover: 8
+  RLT: 4
+  Relax-and-lift: 2
+
+Explored 15 nodes (974 simplex iterations) in 0.26 seconds (0.22 work units)
+Thread count was 32 (of 32 available processors)
+
+Solution count 0
+
+Model is infeasible
+Best objective -, best bound -, gap -
+Gurobi Optimizer version 12.0.2 build v12.0.2rc0 (win64 - Windows 10.0 (19045.2))
+
+CPU model: Intel(R) Core(TM) i9-14900KF, instruction set [SSE2|AVX|AVX2]
+Thread count: 24 physical cores, 32 logical processors, using up to 32 threads
+
+Non-default parameters:
+MIPGap  0.02
+NonConvex  2
+
+
+Computing Irreducible Inconsistent Subsystem (IIS)...
+
+           Constraints          |            Bounds           |  Runtime
+      Min       Max     Guess   |   Min       Max     Guess   |
+--------------------------------------------------------------------------
+        0       817         -         0      1345         -           0s
+        0       437        10         0       724         -           5s
+        0       424        10         0       723         -          10s
+        0       422        10         0       723         -          15s
+        0       417        10         0       723         -          20s
+        0       417        10         0       723         -          25s
+        0       405        10         0       721         -          30s
+        0       389        10         0       720         -          35s
+        0       381        10         0       716         -          40s
+        0       367        24         0       704         -          45s
+        0       362        23         0       698         -          50s
+        0       359        22         0       697         -          55s
+        0       344        20         0       681         -          60s
+        0       338        19         0       669         -          65s
+        0       320        17         0       639         -          70s
+        0       298        16         0       614         -          75s
+        0       286         -         0       608         -          78s
+
+Non-minimal IIS computed: 286 constraints, 608 bounds
+IIS runtime: 77.92 seconds (45.92 work units)
+Warning: Q constraint 0 doesn't have a name
+
+Gurobi 12.0.2 (win64) logging started Tue Jun 17 21:30:20 2025
+
+Set parameter LogFile to value "testlog.log"
+Gurobi Optimizer version 12.0.2 build v12.0.2rc0 (win64 - Windows 10.0 (19045.2))
+
+CPU model: Intel(R) Core(TM) i9-14900KF, instruction set [SSE2|AVX|AVX2]
+Thread count: 24 physical cores, 32 logical processors, using up to 32 threads
+
+Non-default parameters:
+MIPGap  0.02
+NonConvex  2
+
+Optimize a model with 697 rows, 1201 columns and 1825 nonzeros
+Model fingerprint: 0xf5bfc715
+Model has 264 quadratic constraints
+Variable types: 1009 continuous, 192 integer (192 binary)
+Coefficient statistics:
+  Matrix range     [2e-01, 1e+12]
+  QMatrix range    [1e+00, 1e+00]
+  QLMatrix range   [5e-02, 1e+00]
+  Objective range  [1e+00, 1e+00]
+  Bounds range     [1e+00, 3e+03]
+  RHS range        [1e-03, 1e+12]
+  QRHS range       [1e+03, 2e+03]
+Warning: Model contains large matrix coefficient range
+Warning: Model contains large rhs
+         Consider reformulating model or setting NumericFocus parameter
+         to avoid numerical issues.
+Presolve removed 265 rows and 289 columns
+Presolve time: 0.00s
+
+Explored 0 nodes (0 simplex iterations) in 0.00 seconds (0.00 work units)
+Thread count was 1 (of 32 available processors)
+
+Solution count 0
+
+Model is infeasible
+Best objective -, best bound -, gap -
+Gurobi Optimizer version 12.0.2 build v12.0.2rc0 (win64 - Windows 10.0 (19045.2))
+
+CPU model: Intel(R) Core(TM) i9-14900KF, instruction set [SSE2|AVX|AVX2]
+Thread count: 24 physical cores, 32 logical processors, using up to 32 threads
+
+Non-default parameters:
+MIPGap  0.02
+NonConvex  2
+
+
+Computing Irreducible Inconsistent Subsystem (IIS)...
+
+           Constraints          |            Bounds           |  Runtime
+      Min       Max     Guess   |   Min       Max     Guess   |
+--------------------------------------------------------------------------
+        0       961         -         0      1345         -           0s
+Numerical troubles encountered during IIS computation
+        7         7         7         0         0         0           0s
+
+IIS computed: 7 constraints, 0 bounds
+IIS runtime: 0.01 seconds (0.00 work units)
+
+Gurobi 12.0.2 (win64) logging started Tue Jun 17 21:33:27 2025
+
+Set parameter LogFile to value "testlog.log"
+Gurobi Optimizer version 12.0.2 build v12.0.2rc0 (win64 - Windows 10.0 (19045.2))
+
+CPU model: Intel(R) Core(TM) i9-14900KF, instruction set [SSE2|AVX|AVX2]
+Thread count: 24 physical cores, 32 logical processors, using up to 32 threads
+
+Non-default parameters:
+MIPGap  0.02
+NonConvex  2
+
+Optimize a model with 697 rows, 1201 columns and 1825 nonzeros
+Model fingerprint: 0xa798ea80
+Model has 264 quadratic constraints
+Variable types: 1009 continuous, 192 integer (192 binary)
+Coefficient statistics:
+  Matrix range     [2e-01, 1e+12]
+  QMatrix range    [1e+00, 1e+00]
+  QLMatrix range   [5e-02, 1e+00]
+  Objective range  [1e+00, 1e+00]
+  Bounds range     [1e+00, 3e+03]
+  RHS range        [1e-03, 1e+12]
+  QRHS range       [1e+03, 2e+03]
+Warning: Model contains large matrix coefficient range
+Warning: Model contains large rhs
+         Consider reformulating model or setting NumericFocus parameter
+         to avoid numerical issues.
+Presolve removed 265 rows and 289 columns
+Presolve time: 0.00s
+
+Explored 0 nodes (0 simplex iterations) in 0.00 seconds (0.00 work units)
+Thread count was 1 (of 32 available processors)
+
+Solution count 0
+
+Model is infeasible
+Best objective -, best bound -, gap -
+Gurobi Optimizer version 12.0.2 build v12.0.2rc0 (win64 - Windows 10.0 (19045.2))
+
+CPU model: Intel(R) Core(TM) i9-14900KF, instruction set [SSE2|AVX|AVX2]
+Thread count: 24 physical cores, 32 logical processors, using up to 32 threads
+
+Non-default parameters:
+MIPGap  0.02
+NonConvex  2
+
+
+Computing Irreducible Inconsistent Subsystem (IIS)...
+
+           Constraints          |            Bounds           |  Runtime
+      Min       Max     Guess   |   Min       Max     Guess   |
+--------------------------------------------------------------------------
+        0       961         -         0      1345         -           0s
+Numerical troubles encountered during IIS computation
+        7         7         7         0         0         0           0s
+
+IIS computed: 7 constraints, 0 bounds
+IIS runtime: 0.01 seconds (0.00 work units)
+
+Gurobi 12.0.2 (win64) logging started Tue Jun 17 21:34:01 2025
+
+Set parameter LogFile to value "testlog.log"
+Gurobi Optimizer version 12.0.2 build v12.0.2rc0 (win64 - Windows 10.0 (19045.2))
+
+CPU model: Intel(R) Core(TM) i9-14900KF, instruction set [SSE2|AVX|AVX2]
+Thread count: 24 physical cores, 32 logical processors, using up to 32 threads
+
+Non-default parameters:
+MIPGap  0.02
+NonConvex  2
+
+Optimize a model with 697 rows, 1201 columns and 1825 nonzeros
+Model fingerprint: 0x000db670
+Model has 264 quadratic constraints
+Variable types: 1009 continuous, 192 integer (192 binary)
+Coefficient statistics:
+  Matrix range     [2e-01, 1e+12]
+  QMatrix range    [1e+00, 1e+00]
+  QLMatrix range   [5e-02, 1e+00]
+  Objective range  [1e+00, 1e+00]
+  Bounds range     [1e+00, 3e+03]
+  RHS range        [1e-03, 1e+12]
+  QRHS range       [1e+03, 2e+03]
+Warning: Model contains large matrix coefficient range
+Warning: Model contains large rhs
+         Consider reformulating model or setting NumericFocus parameter
+         to avoid numerical issues.
+Presolve removed 481 rows and 553 columns
+Presolve time: 0.00s
+
+Explored 0 nodes (0 simplex iterations) in 0.00 seconds (0.00 work units)
+Thread count was 1 (of 32 available processors)
+
+Solution count 0
+
+Model is infeasible
+Best objective -, best bound -, gap -
+Gurobi Optimizer version 12.0.2 build v12.0.2rc0 (win64 - Windows 10.0 (19045.2))
+
+CPU model: Intel(R) Core(TM) i9-14900KF, instruction set [SSE2|AVX|AVX2]
+Thread count: 24 physical cores, 32 logical processors, using up to 32 threads
+
+Non-default parameters:
+MIPGap  0.02
+NonConvex  2
+
+
+Computing Irreducible Inconsistent Subsystem (IIS)...
+
+           Constraints          |            Bounds           |  Runtime
+      Min       Max     Guess   |   Min       Max     Guess   |
+--------------------------------------------------------------------------
+        0       961         -         0      1345         -           0s
+       20        20        20        13        13        13           1s
+
+IIS computed: 20 constraints, 13 bounds
+IIS runtime: 0.84 seconds (0.25 work units)
+Warning: Q constraint 0 doesn't have a name
+
+Gurobi 12.0.2 (win64) logging started Tue Jun 17 22:15:02 2025
+
+Set parameter LogFile to value "testlog.log"
+Gurobi Optimizer version 12.0.2 build v12.0.2rc0 (win64 - Windows 10.0 (19045.2))
+
+CPU model: Intel(R) Core(TM) i9-14900KF, instruction set [SSE2|AVX|AVX2]
+Thread count: 24 physical cores, 32 logical processors, using up to 32 threads
+
+Non-default parameters:
+MIPGap  0.02
+NonConvex  2
+
+Optimize a model with 697 rows, 1201 columns and 1825 nonzeros
+Model fingerprint: 0x2bb810d6
+Model has 264 quadratic constraints
+Variable types: 1009 continuous, 192 integer (192 binary)
+Coefficient statistics:
+  Matrix range     [2e-01, 1e+12]
+  QMatrix range    [1e+00, 1e+00]
+  QLMatrix range   [5e-02, 1e+00]
+  Objective range  [1e+00, 1e+00]
+  Bounds range     [1e+00, 3e+03]
+  RHS range        [1e-03, 1e+12]
+  QRHS range       [1e+03, 2e+03]
+Warning: Model contains large matrix coefficient range
+Warning: Model contains large rhs
+         Consider reformulating model or setting NumericFocus parameter
+         to avoid numerical issues.
+Presolve removed 481 rows and 697 columns
+Presolve time: 0.00s
+Presolved: 576 rows, 936 columns, 1824 nonzeros
+Presolved model has 288 SOS constraint(s)
+Variable types: 624 continuous, 312 integer (312 binary)
+Found heuristic solution: objective 4837.4172478
+
+Root relaxation: objective 1.671894e+03, 153 iterations, 0.00 seconds (0.00 work units)
+
+    Nodes    |    Current Node    |     Objective Bounds      |     Work
+ Expl Unexpl |  Obj  Depth IntInf | Incumbent    BestBd   Gap | It/Node Time
+
+     0     0 1671.89426    0   10 4837.41725 1671.89426  65.4%     -    0s
+H    0     0                    2418.0861955 1671.89426  30.9%     -    0s
+H    0     0                    2242.0244750 1781.82469  20.5%     -    0s
+     0     0 1793.68346    0   19 2242.02448 1793.68346  20.0%     -    0s
+H    0     0                    2209.2379912 1793.68346  18.8%     -    0s
+     0     0 1793.68346    0   19 2209.23799 1793.68346  18.8%     -    0s
+     0     0 1793.68346    0   18 2209.23799 1793.68346  18.8%     -    0s
+H    0     0                    2206.4168442 1793.68346  18.7%     -    0s
+     0     0 1793.69660    0   21 2206.41684 1793.69660  18.7%     -    0s
+H    0     0                    2203.3374545 1793.69660  18.6%     -    0s
+     0     0 1810.67922    0   21 2203.33745 1810.67922  17.8%     -    0s
+H    0     0                    2189.4205691 1810.67922  17.3%     -    0s
+H    0     0                    2141.5607554 1810.67922  15.5%     -    0s
+H    0     0                    2141.5607506 1810.67922  15.5%     -    0s
+     0     0 1814.35473    0   25 2141.56075 1814.35473  15.3%     -    0s
+H    0     0                    2140.8327599 1814.35473  15.3%     -    0s
+     0     0 1814.35473    0   18 2140.83276 1814.35473  15.3%     -    0s
+H    0     0                    2095.1352307 1814.35473  13.4%     -    0s
+H    0     0                    2078.9321742 1814.35473  12.7%     -    0s
+H    0     0                    2067.4886956 1814.35473  12.2%     -    0s
+     0     2 1814.35473    0   18 2067.48870 1814.35473  12.2%     -    0s
+H   28    52                    2029.5413224 1851.09386  8.79%  15.2    0s
+H   31    52                    2025.9245972 1852.62164  8.55%  14.1    0s
+H   34    52                    2004.9870641 1852.62164  7.60%  13.3    0s
+H   47    46                    1956.1216098 1852.62164  5.29%  11.7    0s
+*  231   182              12    1940.5620055 1861.91262  4.05%   7.3    0s
+*  232   182              12    1940.5345432 1861.91262  4.05%   7.3    0s
+*  253   182              15    1934.0106978 1861.91262  3.73%   7.2    0s
+*  262   182              14    1920.9424974 1891.27548  1.54%   7.2    0s
+*  263   182              14    1920.9122677 1891.27548  1.54%   7.2    0s
+
+Cutting planes:
+  Implied bound: 34
+  MIR: 36
+  Flow cover: 20
+  RLT: 1
+  Relax-and-lift: 1
+  BQP: 1
+
+Explored 284 nodes (2488 simplex iterations) in 0.11 seconds (0.07 work units)
+Thread count was 32 (of 32 available processors)
+
+Solution count 10: 1920.91 1920.94 1934.01 ... 2067.49
+
+Optimal solution found (tolerance 2.00e-02)
+Best objective 1.920912267688e+03, best bound 1.891275475958e+03, gap 1.5428%
+
+Gurobi 12.0.2 (win64) logging started Wed Jun 18 10:46:12 2025
+
+Set parameter LogFile to value "testlog.log"
+Gurobi Optimizer version 12.0.2 build v12.0.2rc0 (win64 - Windows 10.0 (19045.2))
+
+CPU model: Intel(R) Core(TM) i9-14900KF, instruction set [SSE2|AVX|AVX2]
+Thread count: 24 physical cores, 32 logical processors, using up to 32 threads
+
+Non-default parameters:
+MIPGap  0.02
+NonConvex  2
+
+Optimize a model with 697 rows, 1201 columns and 1825 nonzeros
+Model fingerprint: 0x2bb810d6
+Model has 264 quadratic constraints
+Variable types: 1009 continuous, 192 integer (192 binary)
+Coefficient statistics:
+  Matrix range     [2e-01, 1e+12]
+  QMatrix range    [1e+00, 1e+00]
+  QLMatrix range   [5e-02, 1e+00]
+  Objective range  [1e+00, 1e+00]
+  Bounds range     [1e+00, 3e+03]
+  RHS range        [1e-03, 1e+12]
+  QRHS range       [1e+03, 2e+03]
+Warning: Model contains large matrix coefficient range
+Warning: Model contains large rhs
+         Consider reformulating model or setting NumericFocus parameter
+         to avoid numerical issues.
+Presolve removed 481 rows and 697 columns
+Presolve time: 0.00s
+Presolved: 576 rows, 936 columns, 1824 nonzeros
+Presolved model has 288 SOS constraint(s)
+Variable types: 624 continuous, 312 integer (312 binary)
+Found heuristic solution: objective 4837.4172478
+
+Root relaxation: objective 1.671894e+03, 153 iterations, 0.00 seconds (0.00 work units)
+
+    Nodes    |    Current Node    |     Objective Bounds      |     Work
+ Expl Unexpl |  Obj  Depth IntInf | Incumbent    BestBd   Gap | It/Node Time
+
+     0     0 1671.89426    0   10 4837.41725 1671.89426  65.4%     -    0s
+H    0     0                    2418.0861955 1671.89426  30.9%     -    0s
+H    0     0                    2242.0244750 1781.82469  20.5%     -    0s
+     0     0 1793.68346    0   19 2242.02448 1793.68346  20.0%     -    0s
+H    0     0                    2209.2379912 1793.68346  18.8%     -    0s
+     0     0 1793.68346    0   19 2209.23799 1793.68346  18.8%     -    0s
+     0     0 1793.68346    0   18 2209.23799 1793.68346  18.8%     -    0s
+H    0     0                    2206.4168442 1793.68346  18.7%     -    0s
+     0     0 1793.69660    0   21 2206.41684 1793.69660  18.7%     -    0s
+H    0     0                    2203.3374545 1793.69660  18.6%     -    0s
+     0     0 1810.67922    0   21 2203.33745 1810.67922  17.8%     -    0s
+H    0     0                    2189.4205691 1810.67922  17.3%     -    0s
+H    0     0                    2141.5607554 1810.67922  15.5%     -    0s
+H    0     0                    2141.5607506 1810.67922  15.5%     -    0s
+     0     0 1814.35473    0   25 2141.56075 1814.35473  15.3%     -    0s
+H    0     0                    2140.8327599 1814.35473  15.3%     -    0s
+     0     0 1814.35473    0   18 2140.83276 1814.35473  15.3%     -    0s
+H    0     0                    2095.1352307 1814.35473  13.4%     -    0s
+H    0     0                    2078.9321742 1814.35473  12.7%     -    0s
+H    0     0                    2067.4886956 1814.35473  12.2%     -    0s
+     0     2 1814.35473    0   18 2067.48870 1814.35473  12.2%     -    0s
+H   28    52                    2029.5413224 1851.09386  8.79%  15.2    0s
+H   31    52                    2025.9245972 1852.62164  8.55%  14.1    0s
+H   34    52                    2004.9870641 1852.62164  7.60%  13.3    0s
+H   47    46                    1956.1216098 1852.62164  5.29%  11.7    0s
+*  231   182              12    1940.5620055 1861.91262  4.05%   7.3    0s
+*  232   182              12    1940.5345432 1861.91262  4.05%   7.3    0s
+*  253   182              15    1934.0106978 1861.91262  3.73%   7.2    0s
+*  262   182              14    1920.9424974 1891.27548  1.54%   7.2    0s
+*  263   182              14    1920.9122677 1891.27548  1.54%   7.2    0s
+
+Cutting planes:
+  Implied bound: 34
+  MIR: 36
+  Flow cover: 20
+  RLT: 1
+  Relax-and-lift: 1
+  BQP: 1
+
+Explored 284 nodes (2488 simplex iterations) in 0.11 seconds (0.07 work units)
+Thread count was 32 (of 32 available processors)
+
+Solution count 10: 1920.91 1920.94 1934.01 ... 2067.49
+
+Optimal solution found (tolerance 2.00e-02)
+Best objective 1.920912267688e+03, best bound 1.891275475958e+03, gap 1.5428%

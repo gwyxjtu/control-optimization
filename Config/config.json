@@ -24,9 +24,11 @@
         "fc":
             {
                 "power_max":800,
-
-                "eta_fc_p":14.15,
-                "eta_fc_g":18.85,
+                "water_max":100,
+                "water_min":50,
+                "eta_p":14.15,
+                "eta_g":18.85,
+                "eta_pump":0.2,
                 "theta_ex":0.85,
                 "power_200":
                 {
@@ -71,7 +73,10 @@
         "eb":
             {
                 "power_max":3000,
-                "beta_eb":0.82,
+                "water_max":100,
+                "water_min":50,
+                "eta_eb":0.82,
+                "eta_pump":0.2,
                 "comment":"electric boiler"
             },  
         "ec":
@@ -82,13 +87,14 @@
             },
         "ht":
             {
-                "water_max":300,
+                "water_max":100,
+                "water_min":50,
                 "energy":5000,
                 "t_max":55,
                 "t_min":45,
                 "t_wetbulb":20,
                 "t_supply":55,
-                "miu_loss":0.001,
+                "eta_loss":0.001,
                 "end_slack":0.2,
                 "comment":"water tank"
             },
@@ -98,16 +104,21 @@
         "ghp":
             {
                 "power_max":300,
-
+                "water_max":100,
+                "water_min":50,
+                "eta_ghp":3.54,
+                "eta_pump":0.2,
                 "beta_ghpg":3.54,
                 "beta_ghpq":4,
                 "comment":"ground source heat pump"
             },
-        "hp":
+        "ahp":
             {
                 "power_max":300,
-
-                "beta_hpg":3.54,
+                "water_max":100,
+                "water_min":50,
+                "eta_ahp":2.05,
+                "eta_pump":0.2,
                 "beta_hpq":6,
                 "comment":"ground source heat pump,季节储热只能用cop了"
             },
@@ -117,7 +128,7 @@
                 "number_max":42,
                 "cost":30000,
                 "crf":30,
-                "water_max":240,
+                "water_max":100,
                 "t_in_min":4,
                 "beta_gtw":7,
                 "comment":"ground thermal well"
@@ -133,19 +144,28 @@
                 "end_slack":0.2,
                 "comment":"cooling water tank"
             },
-
+        "pipe":
+            {
+                "water_max":500,
+                "water_min":50,
+                "t_max":55,
+                "t_min":45,
+                "eta_loss":0.05,
+                "eta_pump":0.2,
+                "temperature_difference":5,
+                "comment":"供暖管道"
+            },
 
         "pv":
             {
-                "power_max":5000,
+                "power_max":1100,
 
-                "beta_pv":0.21
+                "eta_pv":0.9
             },
-        "de":
+        "bs":
             {
-                "water_max":150,
-                "t_max":52,
-                "t_min":47,
+                "power_max":50,
+                "power_min":10,
                 "miu_loss":0.15,
                 "temperature_difference":5,
                 "comment":"供暖管道"
