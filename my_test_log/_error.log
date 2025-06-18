@@ -33,3 +33,4 @@
 [2025-06-16 22:02:48] [error] [e:\seafile\Seafile\guo_file\#控制优化\code\control-optimization\Model\optimization_day.py - 195 - opt_day] 读取config.json中边界上下限参数失败,错误原因为'water_min'
 [2025-06-16 22:03:03] [error] [e:\seafile\Seafile\guo_file\#控制优化\code\control-optimization\Model\optimization_day.py - 195 - opt_day] 读取config.json中边界上下限参数失败,错误原因为'water_min'
 [2025-06-16 22:04:09] [error] [e:\seafile\Seafile\guo_file\#控制优化\code\control-optimization\Model\optimization_day.py - 195 - opt_day] 读取config.json中边界上下限参数失败,错误原因为'water_min'
+[2025-06-18 12:05:31] [error] [e:\seafile\Seafile\guo_file\#控制优化\code\control-optimization\Model\optimization_day.py - 214 - opt_day] 读取config.json中边界上下限参数失败,错误原因为't_max'
