@@ -1,3 +1,11 @@
+'''
+Author: guo-4060ti 867718012@qq.com
+Date: 2025-06-16 20:19:09
+LastEditTime: 2025-06-18 10:45:51
+LastEditors: guo-4060ti 867718012@qq.com
+FilePath: \control-optimization\Model\optimization_day.py
+Description: 雪花掩盖着哽咽叹息这离别
+'''
 #!/usr/bin/env python3.7
 from arrow import get
 import gurobipy as gp
@@ -144,11 +152,11 @@ def opt_day(parameter_json, load_json, begin_time, time_scale, storage_begin_jso
         eta_pump_fc = parameter_json['device']['fc']['eta_pump']
         # HT, 储热罐
         eta_ht_loss = parameter_json['device']['ht']['eta_loss']
-        # TODO: 是否需要储热罐循环泵功率？
+        # TODO: 是否需要储热罐循环泵功率？水箱不用
         # eta_pump_ht = parameter_json['device']['ht']['eta_pump']
-        # TODO: 是否需要地热井？
+        # TODO: 是否需要地热井？地热井不用
         # BS, 蓄电池
-        # TODO: 是否需要蓄电池储能损失？
+        # TODO: 是否需要蓄电池储能损失？日内可以不考虑
         # eta_bs_loss = parameter_json['device']['bs']['eta_loss']
         # PV, 光伏
         eta_pv = parameter_json['device']['pv']['eta_pv']
@@ -211,12 +219,12 @@ def opt_day(parameter_json, load_json, begin_time, time_scale, storage_begin_jso
         input_data = get_data()
         
         p_load = list(input_data['P_DE'])
-        period = len(p_load)
+        period = time_scale
         # g_load = [list(input_data['G_DE'])[i] + list(input_data['H_DE'])[i] for i in range(period)]
         g_load = list(input_data['G_DE'])
         q_load = list(input_data['Q_DE'])
         pv_generation = list(input_data['R_PV'])
-        # TODO: 认为此为环境温度，是否正确？
+        # TODO: 认为此为环境温度，是否正确？可以
         t_env = list(load_json['ambient_temperature'])  # 读环境温度
         g_func= list(load_json['g函数值'])
     except BaseException as E:
@@ -256,7 +264,7 @@ def opt_day(parameter_json, load_json, begin_time, time_scale, storage_begin_jso
     z_eb_de = [model.addVar(vtype=GRB.BINARY, name=f"z_eb_de[{t}]") for t in range(period)]  # 电锅炉给末端供热
     z_fc_ht = [model.addVar(vtype=GRB.BINARY, name=f"z_fc_ht[{t}]") for t in range(period)]  # 燃料电池给储热罐蓄热
     z_fc_de = [model.addVar(vtype=GRB.BINARY, name=f"z_fc_de[{t}]") for t in range(period)]  # 燃料电池给末端供热
-    # TODO: 没看明白储热罐的工况，是不能同时给末端供热和蓄热吗？
+    # TODO: 没看明白储热罐的工况，是不能同时给末端供热和蓄热吗？对
     z_ht_sto = [model.addVar(vtype=GRB.BINARY, name=f"z_ht_sto[{t}]") for t in range(period)]  # 储热罐蓄热
     # 电网
     p_pur = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"p_pur[{t}]") for t in range(period)]  # 从电网购电量
@@ -343,8 +351,16 @@ def opt_day(parameter_json, load_json, begin_time, time_scale, storage_begin_jso
                     == g_load[-1] + c_water * m_de[-1] * (t_de[0] - t_de[-1]))
     model.addConstrs(h_pur[t] == m_h_fc[t] for t in range(period))  # 氢源购氢量等于燃料电池耗氢量
     # 流量平衡
-    # TODO: 如何处理蓄热的流量平衡？文档中未体现
+    # TODO: 如何处理蓄热的流量平衡？文档中未体现。蓄热不用管，因为蓄热没有混水问题，用能量形式就够了
     model.addConstrs(m_ghp[t] + m_eb[t] + m_ahp[t] + m_fc[t] + m_ht[t] == m_de[t] for t in range(period))
+    # fix m
+    model.addConstrs(m_ghp[t] == m_ghp_ub for t in range(period))  # 固定减小复杂度
+    model.addConstrs(m_eb[t] == m_eb_ub for t in range(period))  # 固定减小复杂度
+    model.addConstrs(m_ahp[t] == m_ahp_ub for t in range(period))  # 固定减小复杂度
+    model.addConstrs(m_fc[t] == m_fc_ub for t in range(period))  # 固定减小复杂度
+    model.addConstrs(m_ht[t] == m_ht_ub for t in range(period))  # 固定减小复杂度
+    model.addConstrs(m_de[t] == m_de_ub for t in range(period))  # 固定减小复杂度
+    
     model.addConstrs(m_ghp[t] * t_ghp[t] + m_eb[t] * t_eb[t] + m_ahp[t] * t_ahp[t] + m_fc[t] * t_fc[t]
                      + m_ht[t] * t_ht[t] == m_de[t] * t_supply[t] for t in range(period))
 
@@ -361,9 +377,9 @@ def opt_day(parameter_json, load_json, begin_time, time_scale, storage_begin_jso
 
     # 设备约束
     # GHP
-    # TODO: 这怎么建动态效率模型？用 getVal 来读温度吗？
+    # TODO: 这怎么建动态效率模型？用 getVal 来读温度吗？温度就是变量
     model.addConstrs(g_ghp[t] == eta_ghp * p_ghp[t] for t in range(period))
-    # TODO: t^{DE} 是固定值吗？目前先按变量建模
+    # TODO: t^{DE} 是固定值吗？目前先按变量建模。变量
     model.addConstrs(g_ghp[t] == c_water * m_ghp[t] * (t_ghp[t] - t_de[t]) for t in range(period))
     model.addConstrs(p_pump_ghp[t] == eta_pump_ghp * m_ghp[t] for t in range(period))
     # TODO: 缺乏 GTW 约束描述，目前暂未建立 t^{GTW} 的关系
@@ -387,9 +403,9 @@ def opt_day(parameter_json, load_json, begin_time, time_scale, storage_begin_jso
                      == c_water * m_ht_sto * (t_ht_sto[t + 1] - t_ht_sto[t]) + eta_ht_loss * (t_ht_sto[t] - t_env[t])
                      for t in range(period - 1))
     model.addConstr(g_ghp_ht[-1] + g_eb_ht[-1] + g_fc_ht[-1] - g_ht[-1]
-                    == c_water * m_ht_sto * (t_ht_sto[0] - t_ht_sto[-1]) + eta_ht_loss * (t_ht_sto[-1] - t_env[-1]))
-    # TODO: 建模可否省略为 g^{HW} = c * m^{HW} * (t^{HW} - t^{DE})？
-    model.addConstrs(g_ht[t] - g_ghp_ht[t] - g_eb_ht[t] - g_fc_ht[t] == c_water * m_ht[t] * (t_ht[t] - t_de[t])
+                    == c_water * m_ht_sto * (t_ht_sto[0] - t_ht_sto[-1]) + eta_ht_loss * (t_ht_sto[-1] - t_env[23]))
+    # TODO: 建模可否省略为 g^{HW} = c * m^{HW} * (t^{HW} - t^{DE})？可以
+    model.addConstrs(g_ht[t] == c_water * m_ht[t] * (t_ht[t] - t_de[t])
                      for t in range(period))
     # model.addConstrs(p_pump_ht[t] == eta_pump_ht * m_ht[t] for t in range(period))
     # BS
@@ -428,68 +444,60 @@ def opt_day(parameter_json, load_json, begin_time, time_scale, storage_begin_jso
     if model.status == GRB.INFEASIBLE or model.status == 4:
         print('Model is infeasible')
         model.computeIIS()
-        model.write('Temp\model.ilp')
+        model.write(r'Temp\model.ilp')
         print("Irreducible inconsistent subsystem is written to file 'model.ilp'")
         exit(0)
 
     # TODO: 输出未处理
     # 计算一些参数
     # opex_without_opt = [lambda_ele_in[i]*(p_load[i]+q_load[i]/k_hp_q+g_load[i]/k_eb) for i in range(period)]
-    dict_control = {# 负荷
-        # 'time':begin_time,
-        # thermal binary
-        # 'b_hp':[1 if p_hp[i].x > 0 else 0 for i in range(period)],
-        # 'b_eb':[1 if p_eb[i].x > 0 else 0 for i in range(period)],
-        # # -1代表储能，1代表供能
-        # 'b_ht':[-1 if t_ht[i].x > t_ht_l[i].x else 1 if t_ht[i].x > t_ht_l[i].x else 0  for i in range(period)],
-        # # 'b_ct':[1 if t_ct[i].x > t_ct_l[i].x else -1 if t_ct[i].x > t_ht_l[i].x else 0  for i in range(period)],
-        # 'b_fc':[1 if p_fc[i].x > 0 else 0 for i in range(period)],
-
-        # ele
-        'opex':[opex[i].x for i in range(period)],
-        # 'p_demand_price':p_demand_price*p_demand_max.x/24/30*time_scale,
-        # 'operation_mode':[z_a[i].x*1+z_b[i].x*2+z_c[i].x*3+z_d[i].x*4+z_e[i].x*5 for i in range(period)],
-        'p_eb':[p_eb[i].x for i in range(period)],
-        'p_fc':[p_fc[i].x for i in range(period)],
-        'p_el':[p_el[i].x for i in range(period)],
-        'p_hp':[p_hp_max*(z_hp_g[i].x+z_hp_q[i].x) for i in range(period)],
-        'p_pv':[p_pv[i].x for i in range(period)],
-        'z_hp_g':[z_hp_g[i].x for i in range(period)],
-        'z_hp_q':[z_hp_q[i].x for i in range(period)],
-        # 'p_pur':[p_pur[i].x for i in range(period)],
-        'p_load':[p_load[i] for i in range(period)],
-        # 'lambda_ele_in':[lambda_ele_in[i]for i in range(period)],
-        'g_fc':[g_fc[i].x for i in range(period)],
-        'g_eb':[g_eb[i].x for i in range(period)],
-        'g_hp':[g_hp[i].x for i in range(period)],
-        'g':[g[i].x for i in range(period)],
-        'g_load':[g_load[i] for i in range(period)],
-        'g_IN':[g_IN[i].x for i in range(period)],
-        'g_OU':[g_OU[i].x for i in range(period)],
-        'g_HP_IN':[g_HP_IN[i].x for i in range(period)],
-
-        # 'z_ht_de':[z_ht_de[i].x for i in range(period)],
-        'h_pur':[h_pur[i].x for i in range(period)],
-        'cop_hp':[cop_hp[i].x for i in range(period)],
-        'g_gtw':[g_gtw[i].x for i in range(period)],
-        'g_gtw_l':[g_gtw_l[i].x for i in range(period)],
-        't_gtw_out':[t_gtw_out[i].x for i in range(period)],
-        't_gtw_in':[t_gtw_in[i].x for i in range(period)],
-        't_b':[t_b[i].x for i in range(period)],
-        'q_hp':[q_hp[i].x for i in range(period)],
-        'q_load':[q_load[i] for i in range(period)],
-        'q':[q[i].x for i in range(period)],
-        'q_IN':[q_IN[i].x for i in range(period)],
-        'q_OU':[q_OU[i].x for i in range(period)],
-
-        'h_el':[h_el[i].x for i in range(period)],
-        'h':[h[i].x for i in range(period)],
-        'p_el':[p_el[i].x for i in range(period)],
-        'h_IN':[h_IN[i].x for i in range(period)],
-        'h_OU':[h_OU[i].x for i in range(period)],
-        # 't_ht':[t_ht[i].x for i in range(period)],
-        # 't_de':[t_de[i].x for i in range(period)],
-        # 'p_el':[p_el[i].x for i in range(period)],
+    # 重新构建输出
+        
+    dict_control = {
+        "opex": opex.x,
+        "opex_t": [v.x for v in opex_t],
+        "z_pur": [v.x for v in z_pur],
+        "z_ghp_ht": [v.x for v in z_ghp_ht],
+        "z_ghp_de": [v.x for v in z_ghp_de],
+        "z_eb_ht": [v.x for v in z_eb_ht],
+        "z_eb_de": [v.x for v in z_eb_de],
+        "z_fc_ht": [v.x for v in z_fc_ht],
+        "z_fc_de": [v.x for v in z_fc_de],
+        "z_ht_sto": [v.x for v in z_ht_sto],
+        "p_pur": [v.x for v in p_pur],
+        "h_pur": [v.x for v in h_pur],
+        "t_de": [v.x for v in t_de],
+        "p_ghp": [v.x for v in p_ghp],
+        "g_ghp": [v.x for v in g_ghp],
+        "g_ghp_ht": [v.x for v in g_ghp_ht],
+        "g_ghp_de": [v.x for v in g_ghp_de],
+        "t_ghp": [v.x for v in t_ghp],
+        "m_ghp": [v.x for v in m_ghp],
+        "p_pump_ghp": [v.x for v in p_pump_ghp],
+        "p_eb": [v.x for v in p_eb],
+        "g_eb": [v.x for v in g_eb],
+        "g_eb_ht": [v.x for v in g_eb_ht],
+        "g_eb_de": [v.x for v in g_eb_de],
+        "t_eb": [v.x for v in t_eb],
+        "m_eb": [v.x for v in m_eb],
+        "p_pump_eb": [v.x for v in p_pump_eb],
+        "p_ahp": [v.x for v in p_ahp],
+        "g_ahp": [v.x for v in g_ahp],
+        "t_ahp": [v.x for v in t_ahp],
+        "m_ahp": [v.x for v in m_ahp],
+        "p_pump_ahp": [v.x for v in p_pump_ahp],
+        "m_h_fc": [v.x for v in m_h_fc],
+        "p_fc": [v.x for v in p_fc],
+        "g_fc": [v.x for v in g_fc],
+        "g_fc_ht": [v.x for v in g_fc_ht],
+        "g_fc_de": [v.x for v in g_fc_de],
+        "t_fc": [v.x for v in t_fc],
+        "m_fc": [v.x for v in m_fc],
+        "p_pump_fc": [v.x for v in p_pump_fc],
+        "g_ht": [v.x for v in g_ht],
+        "t_ht_sto": [v.x for v in t_ht_sto],
+        "t_ht": [v.x for v in t_ht],
+        "m_ht": [v.x for v in m_ht]
     }
     # dict_control = {# 负荷
     #     'time':[begin_time+i for i in range(period)],
