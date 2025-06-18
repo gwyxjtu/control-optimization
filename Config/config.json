@@ -136,7 +136,7 @@
                 "number_max":42,
                 "cost":30000,
                 "crf":30,
-                "water_max":100,
+                "water_max":130,
                 "t_in_min":4,
                 "beta_gtw":7,
                 "comment":"ground thermal well"
