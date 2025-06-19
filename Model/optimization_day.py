@@ -1,7 +1,7 @@
 '''
 Author: guo-4060ti 867718012@qq.com
 Date: 2025-06-16 20:19:09
-LastEditTime: 2025-06-18 15:46:28
+LastEditTime: 2025-06-19 11:26:27
 LastEditors: guo-4060ti 867718012@qq.com
 FilePath: \control-optimization\Model\optimization_day.py
 Description: 雪花掩盖着哽咽叹息这离别
@@ -422,10 +422,10 @@ def opt_day(parameter_json, load_json, begin_time, time_scale, storage_begin_jso
         model.addConstr(g_gtw[t]==c_water*m_gtw*(t_gtw_out[t]-t_gtw_in[t]))
         model.addConstr(t_gtw_out[t]==0.2*(t_gtw_out[t]-t_b[t])+t_b[t])
     # TODO: 保证地热井约束起作用的关键意义不明约束
-    model.addConstr(g_gtw[0]==0)
-    model.addConstr(t_b[0]==11.5-(1000/(2*np.pi*2.07*200*192))*(g_gtw[0])*g_func[0])
+    # model.addConstr(g_gtw[0]==0)
+    model.addConstr(t_b[0]==10.5-(1000/(2*np.pi*2.07*200*192))*(g_gtw[0])*g_func[0])
     for t in range(1,period):
-        model.addConstr(t_b[t]==11.5-(1000/(2*np.pi*2.07*200*192))*gp.quicksum((g_gtw[j]-g_gtw[j-1])*g_func[t-j] for j in range(t+1)))
+        model.addConstr(t_b[t]==10.5-(1000/(2*np.pi*2.07*200*192))*gp.quicksum((g_gtw[j]-g_gtw[j-1])*g_func[t-j] for j in range(t+1)))
 
     # EB
     model.addConstrs(g_eb[t] == eta_eb * p_eb[t] for t in range(period))
@@ -481,7 +481,8 @@ def opt_day(parameter_json, load_json, begin_time, time_scale, storage_begin_jso
     model.addConstrs(opex_t[t] == hydrogen_price * h_pur[t] + lambda_ele_in[t] * p_pur[t] for t in range(period))
     model.addConstr(opex == gp.quicksum(opex_t[t] for t in range(period)))  # 总运行成本
     # 设置目标函数
-    model.setObjective(opex, GRB.MINIMIZE)
+    z_sum = gp.quicksum(z_pur[t] + z_ghp_ht[t] + z_ghp_de[t] + z_eb_ht[t] + z_eb_de[t] + z_fc_ht[t] + z_fc_de[t] + z_ht_sto[t] for t in range(period))
+    model.setObjective(opex + z_sum, GRB.MINIMIZE)
     model.params.NonConvex = 2
     model.params.MIPGap = 0.001
     # model.params.TimeLimit=300
