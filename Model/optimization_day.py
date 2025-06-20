@@ -413,7 +413,7 @@ def opt_day(parameter_json, load_json, begin_time, time_scale, storage_begin_jso
     # TODO: 这怎么建动态效率模型？用 getVal 来读温度吗？温度就是变量
     model.addConstrs(g_ghp[t] == eta_ghp[t] * z_ghp[t] * p_ghp_max for t in range(period))
     # TODO: t^{DE} 是固定值吗？目前先按变量建模。变量
-    model.addConstrs(g_ghp[t] == c_water * m_ghp[t] * (t_ghp[t] - t_de[t]) for t in range(period))
+    model.addConstrs(g_ghp[t]*z_ghp_de[t] == c_water * m_ghp[t] * (t_ghp[t] - t_de[t]) for t in range(period))
     model.addConstrs(p_pump_ghp[t] == eta_pump_ghp * m_ghp[t] for t in range(period))
     model.addConstrs(g_gtw[t]==g_ghp[t] - z_ghp[t] * p_ghp_max for t in range(period))
     # TODO: 缺乏 GTW 约束描述，目前暂未建立 t^{GTW} 的关系
@@ -428,7 +428,7 @@ def opt_day(parameter_json, load_json, begin_time, time_scale, storage_begin_jso
 
     # EB
     model.addConstrs(g_eb[t] == eta_eb * p_eb[t] for t in range(period))
-    model.addConstrs(g_eb[t] == c_water * m_eb[t] * (t_eb[t] - t_de[t]) for t in range(period))
+    model.addConstrs(g_eb[t]*z_eb_de[t] == c_water * m_eb[t] * (t_eb[t] - t_de[t]) for t in range(period))
     model.addConstrs(p_pump_eb[t] == eta_pump_eb * m_eb[t] for t in range(period))
     # AHP
     # TODO: 修改空气源热泵的效率计算
@@ -464,7 +464,7 @@ def opt_day(parameter_json, load_json, begin_time, time_scale, storage_begin_jso
     for t in range(period):
         model.addGenConstrPWL(p_fc[t], g_fc[t], [0, 200, 400, 600], [0, g_p_ratio_200 * 200, g_p_ratio_400 * 400, g_p_ratio_600 * 600])
     # model.addConstrs(g_fc[t] == eta_fc_g * m_h_fc[t] for t in range(period))
-    model.addConstrs(g_fc[t] == c_water * m_fc[t] * (t_fc[t] - t_de[t]) for t in range(period))
+    model.addConstrs(g_fc[t]*z_fc_de[t] == c_water * m_fc[t] * (t_fc[t] - t_de[t]) for t in range(period))
     model.addConstrs(p_pump_fc[t] == eta_pump_fc * m_fc[t] for t in range(period))
     # HT
     # TODO: 文档中该公式是否有问题？
@@ -514,7 +514,7 @@ def opt_day(parameter_json, load_json, begin_time, time_scale, storage_begin_jso
     if model.status == GRB.INFEASIBLE or model.status == 4:
         print('Model is infeasible')
         model.computeIIS()
-        model.write(r'contral-opt\control-optimization\Temp\model.ilp')
+        model.write(r'Temp\model.ilp')
         print("Irreducible inconsistent subsystem is written to file 'model.ilp'")
         exit(0)
 
@@ -573,7 +573,10 @@ def opt_day(parameter_json, load_json, begin_time, time_scale, storage_begin_jso
         "g_ht": [v.x for v in g_ht],
         "t_ht_sto": [v.x for v in t_ht_sto],
         "t_ht": [v.x for v in t_ht],
-        "m_ht": [v.x for v in m_ht]
+        "m_ht": [v.x for v in m_ht],
+        "p_bs_sto": [v.x for v in p_bs_sto],
+        "p_bs_ch": [v.x for v in p_bs_ch],
+        "p_bs_dis": [v.x for v in p_bs_dis],
     }
     # dict_control = {# 负荷
     #     'time':[begin_time+i for i in range(period)],
