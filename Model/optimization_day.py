@@ -421,8 +421,7 @@ def opt_day(parameter_json, load_json, begin_time, time_scale, storage_begin_jso
         model.addConstr(eta_ghp[t]==2+0.1209*t_gtw_out[t])
         model.addConstr(g_gtw[t]==c_water*m_gtw*(t_gtw_out[t]-t_gtw_in[t]))
         model.addConstr(t_gtw_out[t]==0.2*(t_gtw_out[t]-t_b[t])+t_b[t])
-    # TODO: 保证地热井约束起作用的关键意义不明约束
-    # model.addConstr(g_gtw[0]==0)
+
     model.addConstr(t_b[0]==10.5-(1000/(2*np.pi*2.07*200*192))*(g_gtw[0])*g_func[0])
     for t in range(1,period):
         model.addConstr(t_b[t]==10.5-(1000/(2*np.pi*2.07*200*192))*gp.quicksum((g_gtw[j]-g_gtw[j-1])*g_func[t-j] for j in range(t+1)))
@@ -432,8 +431,30 @@ def opt_day(parameter_json, load_json, begin_time, time_scale, storage_begin_jso
     model.addConstrs(g_eb[t] == c_water * m_eb[t] * (t_eb[t] - t_de[t]) for t in range(period))
     model.addConstrs(p_pump_eb[t] == eta_pump_eb * m_eb[t] for t in range(period))
     # AHP
-    # TODO: 修改了空气源热泵的效率计算
-    model.addConstrs(eta_ahp[t] == eta_ahp_base + k_t_env * t_env[t] + k_t_ahp * t_ahp[t] for t in range(period))
+    # TODO: 修改空气源热泵的效率计算
+        # 一共有5个计算分区，顺序与表格一致
+    for t in range(period):
+        if t_env[t] < -15:
+            model.addConstr(eta_ahp[t] == eta_ahp_base[0] + k_t_env[0] * t_env[t] + k_t_ahp[0] * t_ahp[t])
+        elif t_env[t] < 0 and t_env[t] >= -15:
+            model.addConstr(eta_ahp[t] == eta_ahp_base[1] + k_t_env[1] * t_env[t] + k_t_ahp[1] * t_ahp[t])
+        elif t_env[t] < 15 and t_env[t] >= 0:
+        #     z_ahp_cop=[model.addVar(vtype=GRB.BINARY, name=f"z_ahp_cop[{t}]") for t in range(period)]
+        #     model.addConstr(eta_ahp[t] <= eta_ahp_base[2] + k_t_env[2] * t_env[t] + k_t_ahp[2] * t_ahp[t] + z_ahp_cop[t]*M)
+        #     model.addConstr(eta_ahp[t] >= eta_ahp_base[2] + k_t_env[2] * t_env[t] + k_t_ahp[2] * t_ahp[t] - z_ahp_cop[t]*M)
+
+        #     model.addConstr(eta_ahp[t] <= eta_ahp_base[3] + k_t_env[3] * t_env[t] + k_t_ahp[3] * t_ahp[t] + (1-z_ahp_cop[t])*M)
+        #     model.addConstr(eta_ahp[t] >= eta_ahp_base[3] + k_t_env[3] * t_env[t] + k_t_ahp[3] * t_ahp[t] - (1-z_ahp_cop[t])*M)
+
+            model.addGenConstrPWL(t_ahp[t],eta_ahp[t],[0,45,100],
+                                  [eta_ahp_base[2] + k_t_env[2] * t_env[t] + k_t_ahp[2] * 0,
+                                    eta_ahp_base[2] + k_t_env[2] * t_env[t] + k_t_ahp[2] * 45,
+                                    eta_ahp_base[3] + k_t_env[3] * t_env[t] + k_t_ahp[3] * 100]
+                                )
+        else:
+            model.addConstr(eta_ahp[t] == eta_ahp_base[4] + k_t_env[4] * t_env[t] + k_t_ahp[4] * t_ahp[t] for t in range(period))
+
+    # model.addConstrs(eta_ahp[t] == eta_ahp_base + k_t_env * t_env[t] + k_t_ahp * t_ahp[t] for t in range(period))
     model.addConstrs(g_ahp[t] == eta_ahp[t] * p_ahp[t] for t in range(period))
     model.addConstrs(g_ahp[t] == c_water * m_ahp[t] * (t_ahp[t] - t_de[t]) for t in range(period))
     model.addConstrs(p_pump_ahp[t] == eta_pump_ahp * m_ahp[t] for t in range(period))
@@ -493,7 +514,7 @@ def opt_day(parameter_json, load_json, begin_time, time_scale, storage_begin_jso
     if model.status == GRB.INFEASIBLE or model.status == 4:
         print('Model is infeasible')
         model.computeIIS()
-        model.write(r'Temp\model.ilp')
+        model.write(r'contral-opt\control-optimization\Temp\model.ilp')
         print("Irreducible inconsistent subsystem is written to file 'model.ilp'")
         exit(0)
 
