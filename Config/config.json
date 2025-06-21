@@ -35,17 +35,23 @@
                 "power_200":
                 {
                     "g_p_ratio":1.1583,
-                    "theta_ex":0.85
+                    "theta_ex":0.85,
+                    "k_g_p":1.0867,
+                    "b_g_p":-13.0038
                 },
                 "power_400":
                 {
                     "g_p_ratio":1.1911,
-                    "theta_ex":0.85
+                    "theta_ex":0.85,
+                    "k_g_p":1.4277,
+                    "b_g_p":-81.0894
                 },
                 "power_600":
                 {
                     "g_p_ratio":1.1279,
-                    "theta_ex":0.85
+                    "theta_ex":0.85,
+                    "k_g_p":1.8180,
+                    "b_g_p":-237.4295
                 },
                 "comment":"fuel cell"
             },

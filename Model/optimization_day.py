@@ -159,7 +159,12 @@ def opt_day(parameter_json, load_json, begin_time, time_scale, storage_begin_jso
         g_p_ratio_200 = parameter_json['device']['fc']['power_200']['g_p_ratio']
         g_p_ratio_400 = parameter_json['device']['fc']['power_400']['g_p_ratio']
         g_p_ratio_600 = parameter_json['device']['fc']['power_600']['g_p_ratio']
-
+        k_g_p_200 = parameter_json['device']['fc']['power_200']['k_g_p'] 
+        b_g_p_200 = parameter_json['device']['fc']['power_200']['b_g_p']  
+        k_g_p_400 = parameter_json['device']['fc']['power_400']['k_g_p']
+        b_g_p_400 = parameter_json['device']['fc']['power_400']['b_g_p']
+        k_g_p_600 = parameter_json['device']['fc']['power_600']['k_g_p']
+        b_g_p_600 = parameter_json['device']['fc']['power_600']['b_g_p'] 
         # HT, 储热罐
         eta_ht_loss = parameter_json['device']['ht']['eta_loss']
         # TODO: 是否需要储热罐循环泵功率？水箱不用
@@ -464,7 +469,12 @@ def opt_day(parameter_json, load_json, begin_time, time_scale, storage_begin_jso
     # TODO: 修改了FC热计算
     model.addConstrs(p_fc[t] == eta_fc_p * m_h_fc[t] for t in range(period))
     for t in range(period):
-        model.addGenConstrPWL(p_fc[t], g_fc[t], [0, 200, 400, 600], [0, g_p_ratio_200 * 200, g_p_ratio_400 * 400, g_p_ratio_600 * 600])
+        model.addGenConstrPWL(
+            p_fc[t], g_fc[t], 
+            [0, 200, 400, 600], 
+            [0, k_g_p_200 * 200 + b_g_p_200, k_g_p_400 * 400 + b_g_p_400, k_g_p_600 * 600 + b_g_p_600]
+            )
+
     # model.addConstrs(g_fc[t] == eta_fc_g * m_h_fc[t] for t in range(period))
     model.addConstrs(g_fc[t]*z_fc_de[t] == c_water * m_fc[t] * (t_fc[t] - t_de[t]) for t in range(period))
     model.addConstrs(p_pump_fc[t] == eta_pump_fc * m_fc[t] for t in range(period))
@@ -507,7 +517,7 @@ def opt_day(parameter_json, load_json, begin_time, time_scale, storage_begin_jso
     z_sum = gp.quicksum(z_pur[t] + z_ghp_ht[t] + z_ghp_de[t] + z_eb_ht[t] + z_eb_de[t] + z_fc_ht[t] + z_fc_de[t] + z_ht_sto[t] for t in range(period))
     model.setObjective(opex + z_sum, GRB.MINIMIZE)
     model.params.NonConvex = 2
-    model.params.MIPGap = 0.001
+    model.params.MIPGap = 0.02
     # model.params.TimeLimit=300
     model.Params.LogFile = "testlog.log"
 
