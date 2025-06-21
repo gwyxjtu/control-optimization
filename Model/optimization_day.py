@@ -1,7 +1,7 @@
 '''
 Author: guo-4060ti 867718012@qq.com
 Date: 2025-06-16 20:19:09
-LastEditTime: 2025-06-19 11:26:27
+LastEditTime: 2025-06-21 10:33:52
 LastEditors: guo-4060ti 867718012@qq.com
 FilePath: \control-optimization\Model\optimization_day.py
 Description: 雪花掩盖着哽咽叹息这离别
@@ -362,6 +362,8 @@ def opt_day(parameter_json, load_json, begin_time, time_scale, storage_begin_jso
     t_supply = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"t_supply[{t}]") for t in range(period)]  # 供水温度
     m_de = [model.addVar(vtype=GRB.CONTINUOUS, lb=m_de_lb, ub=m_de_ub,
                          name=f"m_de[{t}]") for t in range(period)]  # 管网循环水量
+    M_de = 100000 # 管网内水量
+    T_de = [model.addVar(vtype=GRB.CONTINUOUS, lb=t_de_lb, name=f"T_de[{t}]") for t in range(period)]  # 管网内平均水温
     p_pump_pipe = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"p_pump_pipe[{t}]") for t in range(period)]  # 管网循环泵功率
     # PV
     p_pv = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"p_pv[{t}]") for t in range(period)]  # 光伏发电功率
@@ -376,27 +378,27 @@ def opt_day(parameter_json, load_json, begin_time, time_scale, storage_begin_jso
                      for t in range(period))
     # TODO: 确认 M^{DE} 和 t^{MP} 指代是否正确
     # TODO: 要添加工况约束吧，不然有问题
-    model.addConstrs(z_ghp_de[t]*g_ghp_de[t] + z_eb_de[t]*g_eb_de[t] + g_ahp[t] + z_fc_de[t]*g_fc_de[t] + g_ht[t]
-                     == g_load[t] + c_water * m_de[t] * (t_de[t + 1] - t_de[t])
-                     for t in range(period - 1))
-    # TODO: 末时刻请果哥确认
-    model.addConstr(z_ghp_de[-1]*g_ghp_de[-1] + z_eb_de[-1]*g_eb_de[-1] + g_ahp[-1] + z_fc_de[-1]*g_fc_de[-1] + g_ht[-1]
-                    == g_load[-1] + c_water * m_de[-1] * (t_de[0] - t_de[-1]))
+    model.addConstrs(g_ghp_de[t] + g_eb_de[t] + g_ahp[t] + g_fc_de[t] + g_ht[t]
+                     == g_load[t]# + c_water * M_de * (T_de[t + 1] - T_de[t])
+                     for t in range(period ))
+    # # TODO: 末时刻请果哥确认
+    # model.addConstr(z_ghp_de[-1]*g_ghp_de[-1] + z_eb_de[-1]*g_eb_de[-1] + g_ahp[-1] + z_fc_de[-1]*g_fc_de[-1] + g_ht[-1]
+    #                 == g_load[-1] )#+ c_water * M_de * (T_de[0] - T_de[-1]))
     model.addConstrs(h_pur[t] == m_h_fc[t] for t in range(period))  # 氢源购氢量等于燃料电池耗氢量
     # 流量平衡
     # TODO: 如何处理蓄热的流量平衡？文档中未体现。蓄热不用管，因为蓄热没有混水问题，用能量形式就够了
     model.addConstrs(m_ghp[t] + m_eb[t] + m_ahp[t] + m_fc[t] + m_ht[t] == m_de[t] for t in range(period))
     # fix m
-    model.addConstrs(m_ghp[t] == m_ghp_ub for t in range(period))  # 固定减小复杂度
-    model.addConstrs(m_eb[t] == m_eb_ub for t in range(period))  # 固定减小复杂度
-    model.addConstrs(m_ahp[t] == m_ahp_ub for t in range(period))  # 固定减小复杂度
-    model.addConstrs(m_fc[t] == m_fc_ub for t in range(period))  # 固定减小复杂度
-    model.addConstrs(m_ht[t] == m_ht_ub for t in range(period))  # 固定减小复杂度
-    model.addConstrs(m_de[t] == m_de_ub for t in range(period))  # 固定减小复杂度
+    model.addConstrs(m_ghp[t] == m_ghp_lb for t in range(period))  # 固定减小复杂度
+    model.addConstrs(m_eb[t] ==  m_eb_lb for t in range(period))  # 固定减小复杂度
+    model.addConstrs(m_ahp[t] == m_ahp_lb for t in range(period))  # 固定减小复杂度
+    model.addConstrs(m_fc[t] ==  m_fc_lb for t in range(period))  # 固定减小复杂度
+    model.addConstrs(m_ht[t] ==  m_ht_lb for t in range(period))  # 固定减小复杂度
+    model.addConstrs(m_de[t] ==  m_de_lb for t in range(period))  # 固定减小复杂度
     
     model.addConstrs(m_ghp[t] * t_ghp[t] + m_eb[t] * t_eb[t] + m_ahp[t] * t_ahp[t] + m_fc[t] * t_fc[t]
                      + m_ht[t] * t_ht[t] == m_de[t] * t_supply[t] for t in range(period))
-
+    # model.addConstrs(g_load[t] == g_ahp[t] + g_ghp_de[t] + g_eb_de[t] + g_fc_de[t] + g_ht[t] for t in range(period))  # 末端供热量等于各设备供热量之和
     # 工况约束
     model.addConstrs(p_pur[t] <= z_pur[t] * M for t in range(period))
     model.addConstrs(g_ghp[t] == z_ghp_ht[t] * g_ghp_ht[t] + z_ghp_de[t] * g_ghp_de[t] for t in range(period))
@@ -483,7 +485,7 @@ def opt_day(parameter_json, load_json, begin_time, time_scale, storage_begin_jso
     # PV
     model.addConstrs(p_pv[t] == eta_pv * p_pv_max * pv_generation[t] for t in range(period))
     # PIPE
-    model.addConstrs(g_load[t] == c_water * m_de[t] * (t_supply[t] - t_de[t]) + eta_pipe_loss * (t_supply[t] - t_env[t])
+    model.addConstrs(g_load[t] == c_water * m_de[t] * (t_supply[t] - t_de[t]) #+ eta_pipe_loss * (t_supply[t] - t_env[t])
                      for t in range(period))
     model.addConstrs(p_pump_pipe[t] == eta_pump_pipe * m_de[t] for t in range(period))
 
@@ -537,6 +539,7 @@ def opt_day(parameter_json, load_json, begin_time, time_scale, storage_begin_jso
         "p_pv": [v.x for v in p_pv],
         "p_pur": [v.x for v in p_pur],
         "h_pur": [v.x for v in h_pur],
+        't_supply': [v.x for v in t_supply],
         "t_de": [v.x for v in t_de],
         "p_ghp": [v.x*p_ghp_max for v in z_ghp],
         "g_ghp": [v.x for v in g_ghp],
@@ -577,6 +580,9 @@ def opt_day(parameter_json, load_json, begin_time, time_scale, storage_begin_jso
         "p_bs_sto": [v.x for v in p_bs_sto],
         "p_bs_ch": [v.x for v in p_bs_ch],
         "p_bs_dis": [v.x for v in p_bs_dis],
+        "m_de": [v.x for v in m_de],
+        'sup':[t_ahp[t].x*m_ahp[t].x+t_eb[t].x*m_eb[t].x+t_fc[t].x*m_fc[t].x+t_ghp[t].x*m_ghp[t].x+t_ht[t].x*m_ht[t].x for t in range(period)],
+        'demand':[t_supply[t].x*m_de[t].x for t in range(period)],
     }
     # dict_control = {# 负荷
     #     'time':[begin_time+i for i in range(period)],
