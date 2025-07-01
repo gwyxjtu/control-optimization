@@ -26,7 +26,7 @@
                 "power_max":800,
                 "water_max":100,
                 "water_min":50,
-                "t_max":55,
+                "t_max":65,
                 "t_min":35,
                 "eta_p":14.15,
                 "eta_g":18.85,
@@ -35,17 +35,23 @@
                 "power_200":
                 {
                     "g_p_ratio":1.1583,
-                    "theta_ex":0.85
+                    "theta_ex":0.85,
+                    "k_g_p":1.0867,
+                    "b_g_p":-13.0038
                 },
                 "power_400":
                 {
                     "g_p_ratio":1.1911,
-                    "theta_ex":0.85
+                    "theta_ex":0.85,
+                    "k_g_p":1.4277,
+                    "b_g_p":-81.0894
                 },
                 "power_600":
                 {
                     "g_p_ratio":1.1279,
-                    "theta_ex":0.85
+                    "theta_ex":0.85,
+                    "k_g_p":1.8180,
+                    "b_g_p":-237.4295
                 },
                 "comment":"fuel cell"
             },
@@ -94,7 +100,7 @@
                 "water_max":100,
                 "water_min":50,
                 "energy":5000,
-                "t_max":80,
+                "t_max":60,
                 "t_min":45,
                 "t_wetbulb":20,
                 "t_supply":55,
@@ -110,7 +116,7 @@
                 "power_max":300,
                 "water_max":100,
                 "water_min":50,
-                "t_max":55,
+                "t_max":65,
                 "t_min":35,
                 "eta_ghp":3.54,
                 "eta_pump":0.2,
@@ -123,11 +129,11 @@
                 "power_max":300,
                 "water_max":100,
                 "water_min":50,
-                "t_max":55,
+                "t_max":65,
                 "t_min":35,
-                "k_t_env":0.0486,
-                "k_t_ahp":-0.0519,
-                "eta_ahp_base":5.2304,
+                "k_t_env":[0.0557,0.0466,0.0615,0.0396,0.0461],
+                "k_t_ahp":[-0.0295,-0.0386,-0.0435,-0.0719,-0.0665],
+                "eta_ahp_base":[4.4103,4.6523,4.9161,6.3125,5.9036],
                 "eta_ahp":2.05,
                 "eta_pump":0.2,
                 "beta_hpq":6,
@@ -158,9 +164,9 @@
         "pipe":
             {
                 "water_max":500,
-                "water_min":50,
-                "t_max":55,
-                "t_min":0,
+                "water_min":250,
+                "t_max":65,
+                "t_min":35,
                 "eta_loss":0.05,
                 "eta_pump":0.2,
                 "temperature_difference":5,

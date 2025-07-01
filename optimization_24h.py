@@ -13,7 +13,7 @@ if __name__ == '__main__':
     #         }
     # pd.DataFrame(g_load).to_csv('hh38.csv')
     _logging.info('start')
-    time_length = 24
+    time_length = 24*3
     try:
         with open("Config/config.json", "rb") as f:
             input_json = json.load(f)
