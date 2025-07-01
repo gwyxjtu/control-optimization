@@ -1,9 +1,9 @@
 '''
 Author: guo-4060ti 867718012@qq.com
 Date: 2025-06-16 20:19:09
-LastEditTime: 2025-06-19 11:26:27
-LastEditors: guo-4060ti 867718012@qq.com
-FilePath: \control-optimization\Model\optimization_day.py
+LastEditTime: 2025-06-19 15:09:53
+LastEditors: guo_MateBookPro 867718012@qq.com
+FilePath: /control-optimization/Model/optimization_day.py
 Description: 雪花掩盖着哽咽叹息这离别
 '''
 #!/usr/bin/env python3.7
@@ -70,7 +70,7 @@ def to_csv(res, filename):
 
 
 # TODO: 添加选取日期的输入参数
-def get_data(data_file="input_720\yulin_water_load.xlsx"):
+def get_data(data_file="input_720/yulin_water_load.xlsx"):
     """获取负荷数据
 
     Args:
@@ -242,14 +242,14 @@ def opt_day(parameter_json, load_json, begin_time, time_scale, storage_begin_jso
     try:
         input_data = get_data()
         
-        p_load = list(input_data['P_DE'])
+        p_load = list(input_data['P_DE'])[24:48]
         period = time_scale
         # g_load = [list(input_data['G_DE'])[i] + list(input_data['H_DE'])[i] for i in range(period)]
-        g_load = list(input_data['G_DE'])
-        q_load = list(input_data['Q_DE'])
+        g_load = list(input_data['G_DE'])[24:48]
+        q_load = list(input_data['Q_DE'])[24:48]
         pv_generation = list(input_data['R_PV'])
         # TODO: 认为此为环境温度，是否正确？可以
-        t_env = list(load_json['ambient_temperature'])  # 读环境温度
+        t_env = list(load_json['ambient_temperature'])[24:48]  # 读环境温度
         g_func= list(load_json['g函数值'])
     except BaseException as E:
         _logging.error('读取负荷文件中电冷热光参数失败,错误原因为{}'.format(E))
