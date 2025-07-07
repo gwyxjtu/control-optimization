@@ -6,6 +6,15 @@ LastEditors: guo-4060ti 867718012@qq.com
 FilePath: \control-optimization\Model\optimization_day.py
 Description: 雪花掩盖着哽咽叹息这离别
 '''
+
+'''
+    开源版本，使用SCIP优化求解器,SCIP 混合整数规划求解器的 Python 接口‌
+    pyscipopt version:  5.2.1
+    SCIP version:       9.1
+
+'''     
+
+
 #!/usr/bin/env python3.7
 from arrow import get
 import gurobipy as gp
