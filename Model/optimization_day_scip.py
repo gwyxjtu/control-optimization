@@ -14,8 +14,9 @@ Description: 雪花掩盖着哽咽叹息这离别
 
 '''     
 
+import pyscipopt as opt
 
-#!/usr/bin/env python3.7
+
 from arrow import get
 import gurobipy as gp
 from gurobipy import GRB
@@ -80,7 +81,6 @@ def to_csv(res, filename):
     wb.save("Output\\"+filename+".xls")
 
 
-# TODO: 添加选取日期的输入参数
 def get_data(data_file="input_720\yulin_water_load.xlsx"):
     """获取负荷数据
 
@@ -133,6 +133,7 @@ def get_data(data_file="input_720\yulin_water_load.xlsx"):
     return input_data
 
 
+# TODO: 修改为pyscipopt的优化模型
 def opt_day(parameter_json, load_json, begin_time, time_scale, storage_begin_json, storage_end_json):
     """计算优化问题，时间尺度不定，输入包括末时刻储能。
 
@@ -148,8 +149,7 @@ def opt_day(parameter_json, load_json, begin_time, time_scale, storage_begin_jso
     M = 1e12  # 大数
     
     # 初始化设备效率参数
-    try:
-        # TODO: 动态效率如何建模？先按读取效率字典来，但不会写代码，目前仍认为这是一个固定值
+    try:        
         # GHP, 浅层地源热泵
         # eta_ghp = parameter_json['device']['ghp']['eta_ghp']
         eta_pump_ghp = parameter_json['device']['ghp']['eta_pump']
@@ -178,11 +178,8 @@ def opt_day(parameter_json, load_json, begin_time, time_scale, storage_begin_jso
         b_g_p_600 = parameter_json['device']['fc']['power_600']['b_g_p'] 
         # HT, 储热罐
         eta_ht_loss = parameter_json['device']['ht']['eta_loss']
-        # TODO: 是否需要储热罐循环泵功率？水箱不用
         # eta_pump_ht = parameter_json['device']['ht']['eta_pump']
-        # TODO: 是否需要地热井？地热井不用
         # BS, 蓄电池
-        # TODO: 是否需要蓄电池储能损失？日内可以不考虑
         # eta_bs_loss = parameter_json['device']['bs']['eta_loss']
         # PV, 光伏
         eta_pv = parameter_json['device']['pv']['eta_pv']
@@ -226,7 +223,6 @@ def opt_day(parameter_json, load_json, begin_time, time_scale, storage_begin_jso
         t_fc_ub = parameter_json['device']['fc']['t_max']  # 燃料电池出水温度上限
         t_fc_lb = parameter_json['device']['fc']['t_min']  # 燃料电池出水温度下限
 
-        # TODO: 是否按照此读取各流量上下限？
         m_ghp_ub = parameter_json['device']['ghp']['water_max']  # 浅层地源热泵循环水量上限
         m_ghp_lb = parameter_json['device']['ghp']['water_min']  # 浅层地源热泵循环水量下限
         m_eb_ub = parameter_json['device']['eb']['water_max']
@@ -264,7 +260,7 @@ def opt_day(parameter_json, load_json, begin_time, time_scale, storage_begin_jso
         g_load = list(input_data['G_DE'])
         q_load = list(input_data['Q_DE'])
         pv_generation = list(input_data['R_PV'])
-        # TODO: 认为此为环境温度，是否正确？可以
+        # NOTE: 认为此为环境温度，是否正确？可以
         t_env = list(load_json['ambient_temperature'])  # 读环境温度
         g_func= list(load_json['g函数值'])
     except BaseException as E:
@@ -290,119 +286,196 @@ def opt_day(parameter_json, load_json, begin_time, time_scale, storage_begin_jso
     #     _logging.error('读取储能容量初始值和最终值失败,错误原因为{}'.format(E))
     #     raise Exception
 
+    # 建立SCIP模型
+
+    model_scip = opt.Model("bilinear")
+
+
     # 通过 gurobi 建立模型
     model = gp.Model("bilinear")
 
     # 添加变量
-    opex = model.addVar(vtype=GRB.CONTINUOUS, lb=0, name="opex")
-    opex_t = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"opex[{t}]") for t in range(period)]  # 每个时段的运行成本
+    opex = model_scip.addVar(vtype='C', lb=0, name="opex")  # 总运行成本
+    opex_t = [model_scip.addVar(vtype='C', lb=0, name=f"opex[{t}]") for t in range(period)]  # 每个时段的运行成本
+    # opex = model.addVar(vtype=GRB.CONTINUOUS, lb=0, name="opex")
+    # opex_t = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"opex[{t}]") for t in range(period)]  # 每个时段的运行成本
     # 工况变量
-    z_pur = [model.addVar(vtype=GRB.BINARY, name=f"z_pur[{t}]") for t in range(period)]  # 是否从电网买电
-    z_ghp_ht = [model.addVar(vtype=GRB.BINARY, name=f"z_ghp_ht[{t}]") for t in range(period)]  # 浅层地源热泵给储热罐蓄热
-    z_ghp_de = [model.addVar(vtype=GRB.BINARY, name=f"z_ghp_de[{t}]") for t in range(period)]  # 浅层地源热泵给末端供热
-    z_eb_ht = [model.addVar(vtype=GRB.BINARY, name=f"z_eb_ht[{t}]") for t in range(period)]  # 电锅炉给储热罐蓄热
-    z_eb_de = [model.addVar(vtype=GRB.BINARY, name=f"z_eb_de[{t}]") for t in range(period)]  # 电锅炉给末端供热
-    z_fc_ht = [model.addVar(vtype=GRB.BINARY, name=f"z_fc_ht[{t}]") for t in range(period)]  # 燃料电池给储热罐蓄热
-    z_fc_de = [model.addVar(vtype=GRB.BINARY, name=f"z_fc_de[{t}]") for t in range(period)]  # 燃料电池给末端供热
-    # TODO: 没看明白储热罐的工况，是不能同时给末端供热和蓄热吗？对
-    z_ht_sto = [model.addVar(vtype=GRB.BINARY, name=f"z_ht_sto[{t}]") for t in range(period)]  # 储热罐蓄热
+    z_pur = [model_scip.addVar(vtype='B', name=f"z_pur[{t}]") for t in range(period)]
+    z_ghp_ht = [model_scip.addVar(vtype='B', name=f"z_ghp_ht[{t}]") for t in range(period)]
+    z_ghp_de = [model_scip.addVar(vtype='B', name=f"z_ghp_de[{t}]") for t in range(period)]
+    z_eb_ht = [model_scip.addVar(vtype='B', name=f"z_eb_ht[{t}]") for t in range(period)]
+    z_eb_de = [model_scip.addVar(vtype='B', name=f"z_eb_de[{t}]") for t in range(period)]
+    z_fc_ht = [model_scip.addVar(vtype='B', name=f"z_fc_ht[{t}]") for t in range(period)]
+    z_fc_de = [model_scip.addVar(vtype='B', name=f"z_fc_de[{t}]") for t in range(period)]
+    # z_pur = [model.addVar(vtype=GRB.BINARY, name=f"z_pur[{t}]") for t in range(period)]  # 是否从电网买电
+    # z_ghp_ht = [model.addVar(vtype=GRB.BINARY, name=f"z_ghp_ht[{t}]") for t in range(period)]  # 浅层地源热泵给储热罐蓄热
+    # z_ghp_de = [model.addVar(vtype=GRB.BINARY, name=f"z_ghp_de[{t}]") for t in range(period)]  # 浅层地源热泵给末端供热
+    # z_eb_ht = [model.addVar(vtype=GRB.BINARY, name=f"z_eb_ht[{t}]") for t in range(period)]  # 电锅炉给储热罐蓄热
+    # z_eb_de = [model.addVar(vtype=GRB.BINARY, name=f"z_eb_de[{t}]") for t in range(period)]  # 电锅炉给末端供热
+    # z_fc_ht = [model.addVar(vtype=GRB.BINARY, name=f"z_fc_ht[{t}]") for t in range(period)]  # 燃料电池给储热罐蓄热
+    # z_fc_de = [model.addVar(vtype=GRB.BINARY, name=f"z_fc_de[{t}]") for t in range(period)]  # 燃料电池给末端供热
+    # NOTE: 没看明白储热罐的工况，是不能同时给末端供热和蓄热吗？对
+    z_ht_sto = [model_scip.addVar(vtype='B', name=f"z_ht_sto[{t}]") for t in range(period)]
+    # z_ht_sto = [model.addVar(vtype=GRB.BINARY, name=f"z_ht_sto[{t}]") for t in range(period)]  # 储热罐蓄热
     # 电网
-    p_pur = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"p_pur[{t}]") for t in range(period)]  # 从电网购电量
+    p_pur = [model_scip.addVar(vtype='C', lb=0, name=f"p_pur[{t}]") for t in range(period)]  # 从电网购电量
+    # p_pur = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"p_pur[{t}]") for t in range(period)]  # 从电网购电量
     # 氢源
-    h_pur = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"h_pur[{t}]") for t in range(period)]  # 购氢量
+    h_pur = [model_scip.addVar(vtype='C', lb=0, name=f"h_pur[{t}]") for t in range(period)]
+    # h_pur = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"h_pur[{t}]") for t in range(period)]  # 购氢量
     # 末端
-    t_de = [model.addVar(vtype=GRB.CONTINUOUS, lb=t_de_lb, ub=t_de_ub, name=f"t_de[{t}]") for t in range(period)]  # 末端供回水温度
+    t_de = [model_scip.addVar(vtype='C', lb=t_de_lb, ub=t_de_ub, name=f"t_de[{t}]") for t in range(period)]
+    # t_de = [model.addVar(vtype=GRB.CONTINUOUS, lb=t_de_lb, ub=t_de_ub, name=f"t_de[{t}]") for t in range(period)]  # 末端供回水温度
     # GHP
-    z_ghp = [model.addVar(vtype=GRB.BINARY, name=f"z_ghp[{t}]") for t in range(period)]  # 是否启用浅层地源热泵
+    z_ghp = [model_scip.addVar(vtype='B', name=f"z_ghp[{t}]") for t in range(period)]
+    # z_ghp = [model.addVar(vtype=GRB.BINARY, name=f"z_ghp[{t}]") for t in range(period)]  # 是否启用浅层地源热泵
     # p_ghp = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, ub=p_ghp_max,
     #                       name=f"p_ghp[{t}]") for t in range(period)]  # 浅层地源热泵功率
-    g_ghp = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"g_ghp[{t}]") for t in range(period)]  # 浅层地源热泵供热量
-    g_ghp_ht = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"g_ghp_ht[{t}]") for t in range(period)]  # 浅层地源热泵给储热罐蓄热量
-    g_ghp_de = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"g_ghp_de[{t}]") for t in range(period)]  # 浅层地源热泵给末端供热量
-    t_ghp = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"t_ghp[{t}]") for t in range(period)]  # 浅层地源热泵出水温度
-    m_ghp = [model.addVar(vtype=GRB.CONTINUOUS, lb=m_ghp_lb, ub=m_ghp_ub,
-                          name=f"m_ghp[{t}]") for t in range(period)]  # 浅层地源热泵循环水量
-    p_pump_ghp = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"p_pump_ghp[{t}]") for t in range(period)]  # 浅层地源热泵循环泵功率
-    eta_ghp = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"cop_ghp[{t}]") for t in range(period)]  # 浅层地源热泵性能系数
+    
+    g_ghp = [model_scip.addVar(vtype='C', lb=0, name=f"g_ghp[{t}]") for t in range(period)]
+    g_ghp_ht = [model_scip.addVar(vtype='C', lb=0, name=f"g_ghp_ht[{t}]") for t in range(period)]
+    g_ghp_de = [model_scip.addVar(vtype='C', lb=0, name=f"g_ghp_de[{t}]") for t in range(period)]
+    t_ghp = [model_scip.addVar(vtype='C', lb=0, name=f"t_ghp[{t}]") for t in range(period)]
+    m_ghp = [model_scip.addVar(vtype='C', lb=m_ghp_lb, ub=m_ghp_ub,
+                               name=f"m_ghp[{t}]") for t in range(period)]
+    p_pump_ghp = [model_scip.addVar(vtype='C', lb=0, name=f"p_pump_ghp[{t}]") for t in range(period)]
+    eta_ghp = [model_scip.addVar(vtype='C', lb=0, name=f"cop_ghp[{t}]") for t in range(period)]
+    # g_ghp = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"g_ghp[{t}]") for t in range(period)]  # 浅层地源热泵供热量
+    # g_ghp_ht = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"g_ghp_ht[{t}]") for t in range(period)]  # 浅层地源热泵给储热罐蓄热量
+    # g_ghp_de = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"g_ghp_de[{t}]") for t in range(period)]  # 浅层地源热泵给末端供热量
+    # t_ghp = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"t_ghp[{t}]") for t in range(period)]  # 浅层地源热泵出水温度
+    # m_ghp = [model.addVar(vtype=GRB.CONTINUOUS, lb=m_ghp_lb, ub=m_ghp_ub,
+    #                       name=f"m_ghp[{t}]") for t in range(period)]  # 浅层地源热泵循环水量
+    # p_pump_ghp = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"p_pump_ghp[{t}]") for t in range(period)]  # 浅层地源热泵循环泵功率
+    # eta_ghp = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"cop_ghp[{t}]") for t in range(period)]  # 浅层地源热泵性能系数
     # GTW
-    t_gtw_in = [model.addVar(vtype=GRB.CONTINUOUS, lb=t_gtw_in_min, name=f"t_gtw_in[{t}]") for t in range(period)]  # 地热井进水温度
-    t_gtw_out = [model.addVar(vtype=GRB.CONTINUOUS, lb=t_gtw_in_min, name=f"t_gtw_out[{t}]") for t in range(period)]  # 地热井出水温度
-    t_b = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"t_b[{t}]") for t in range(period)]  # 地热井温度
-    g_gtw = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"g_gtw[{t}]") for t in range(period)]
+    t_gtw_in = [model_scip.addVar(vtype='C', lb=t_gtw_in_min, name=f"t_gtw_in[{t}]") for t in range(period)]
+    t_gtw_out = [model_scip.addVar(vtype='C', lb=t_gtw_in_min, name=f"t_gtw_out[{t}]") for t in range(period)]
+    t_b = [model_scip.addVar(vtype='C', lb=0, name=f"t_b[{t}]") for t in range(period)]
+    g_gtw = [model_scip.addVar(vtype='C', lb=0, name=f"g_gtw[{t}]") for t in range(period)]
+    # t_gtw_in = [model.addVar(vtype=GRB.CONTINUOUS, lb=t_gtw_in_min, name=f"t_gtw_in[{t}]") for t in range(period)]  # 地热井进水温度
+    # t_gtw_out = [model.addVar(vtype=GRB.CONTINUOUS, lb=t_gtw_in_min, name=f"t_gtw_out[{t}]") for t in range(period)]  # 地热井出水温度
+    # t_b = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"t_b[{t}]") for t in range(period)]  # 地热井温度
+    # g_gtw = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"g_gtw[{t}]") for t in range(period)]
     # EB
-    p_eb = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, ub=p_eb_max,
-                         name=f"p_eb[{t}]") for t in range(period)]
-    g_eb = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"g_eb[{t}]") for t in range(period)]
-    g_eb_ht = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"g_eb_ht[{t}]") for t in range(period)]
-    g_eb_de = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"g_eb_de[{t}]") for t in range(period)]
-    t_eb = [model.addVar(vtype=GRB.CONTINUOUS, lb=t_eb_lb,ub=t_eb_ub, name=f"t_eb[{t}]") for t in range(period)]
-    m_eb = [model.addVar(vtype=GRB.CONTINUOUS, lb=m_eb_lb, ub=m_eb_ub,
-                         name=f"m_eb[{t}]") for t in range(period)]
-    p_pump_eb = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"p_pump_eb[{t}]") for t in range(period)]
+    p_eb = [model_scip.addVar(vtype='C', lb=0, ub=p_eb_max, name=f"p_eb[{t}]") for t in range(period)]
+    g_eb = [model_scip.addVar(vtype='C', lb=0, name=f"g_eb[{t}]") for t in range(period)]
+    g_eb_ht = [model_scip.addVar(vtype='C', lb=0, name=f"g_eb_ht[{t}]") for t in range(period)]
+    g_eb_de = [model_scip.addVar(vtype='C', lb=0, name=f"g_eb_de[{t}]") for t in range(period)]
+    t_eb = [model_scip.addVar(vtype='C', lb=t_eb_lb, ub=t_eb_ub, name=f"t_eb[{t}]") for t in range(period)]
+    m_eb = [model_scip.addVar(vtype='C', lb=m_eb_lb, ub=m_eb_ub,
+                              name=f"m_eb[{t}]") for t in range(period)]
+    p_pump_eb = [model_scip.addVar(vtype='C', lb=0, name=f"p_pump_eb[{t}]") for t in range(period)]
+    # p_eb = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, ub=p_eb_max,
+    #                      name=f"p_eb[{t}]") for t in range(period)]
+    # g_eb = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"g_eb[{t}]") for t in range(period)]
+    # g_eb_ht = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"g_eb_ht[{t}]") for t in range(period)]
+    # g_eb_de = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"g_eb_de[{t}]") for t in range(period)]
+    # t_eb = [model.addVar(vtype=GRB.CONTINUOUS, lb=t_eb_lb,ub=t_eb_ub, name=f"t_eb[{t}]") for t in range(period)]
+    # m_eb = [model.addVar(vtype=GRB.CONTINUOUS, lb=m_eb_lb, ub=m_eb_ub,
+    #                      name=f"m_eb[{t}]") for t in range(period)]
+    # p_pump_eb = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"p_pump_eb[{t}]") for t in range(period)]
     # AHP
-    p_ahp = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, ub=p_ahp_max,
-                          name=f"p_ahp[{t}]") for t in range(period)]
-    g_ahp = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"g_ahp[{t}]") for t in range(period)]
-    t_ahp = [model.addVar(vtype=GRB.CONTINUOUS, lb=t_ahp_lb,ub=t_ahp_ub, name=f"t_ahp[{t}]") for t in range(period)]
-    m_ahp = [model.addVar(vtype=GRB.CONTINUOUS, lb=m_ahp_lb, ub=m_ahp_ub,
-                          name=f"m_ahp[{t}]") for t in range(period)]
-    eta_ahp = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"cop_ahp[{t}]") for t in range(period)]  # 空气源热泵性能系数
-    p_pump_ahp = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"p_pump_ahp[{t}]") for t in range(period)]
+    p_ahp = [model_scip.addVar(vtype='C', lb=0, ub=p_ahp_max,
+                              name=f"p_ahp[{t}]") for t in range(period)]
+    g_ahp = [model_scip.addVar(vtype='C', lb=0, name=f"g_ahp[{t}]") for t in range(period)]
+    t_ahp = [model_scip.addVar(vtype='C', lb=t_ahp_lb,ub=t_ahp_ub, name=f"t_ahp[{t}]") for t in range(period)]
+    m_ahp = [model_scip.addVar(vtype='C', lb=m_ahp_lb, ub=m_ahp_ub,
+                              name=f"m_ahp[{t}]") for t in range(period)]
+    eta_ahp = [model_scip.addVar(vtype='C', lb=0, name=f"cop_ahp[{t}]") for t in range(period)]
+    p_pump_ahp = [model_scip.addVar(vtype='C', lb=0, name=f"p_pump_ahp[{t}]") for t in range(period)]     
+    # p_ahp = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, ub=p_ahp_max,
+    #                       name=f"p_ahp[{t}]") for t in range(period)]
+    # g_ahp = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"g_ahp[{t}]") for t in range(period)]
+    # t_ahp = [model.addVar(vtype=GRB.CONTINUOUS, lb=t_ahp_lb,ub=t_ahp_ub, name=f"t_ahp[{t}]") for t in range(period)]
+    # m_ahp = [model.addVar(vtype=GRB.CONTINUOUS, lb=m_ahp_lb, ub=m_ahp_ub,
+    #                       name=f"m_ahp[{t}]") for t in range(period)]
+    # eta_ahp = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"cop_ahp[{t}]") for t in range(period)]  # 空气源热泵性能系数
+    # p_pump_ahp = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"p_pump_ahp[{t}]") for t in range(period)]
     # FC
-    m_h_fc = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"m_h_fc[{t}]") for t in range(period)]  # 燃料电池耗氢量
-    p_fc = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, ub=p_fc_max,
-                         name=f"p_fc[{t}]") for t in range(period)]
-    g_fc = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"g_fc[{t}]") for t in range(period)]
-    g_fc_ht = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"g_fc_ht[{t}]") for t in range(period)]
-    g_fc_de = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"g_fc_de[{t}]") for t in range(period)]
-    t_fc = [model.addVar(vtype=GRB.CONTINUOUS, lb=t_fc_lb,ub=t_fc_ub, name=f"t_fc[{t}]") for t in range(period)]
-    m_fc = [model.addVar(vtype=GRB.CONTINUOUS, lb=m_fc_lb, ub=m_fc_ub,
-                         name=f"m_fc[{t}]") for t in range(period)]  # 燃料电池循环水量
-    p_pump_fc = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"p_pump_fc[{t}]") for t in range(period)]
+    m_h_fc = [model_scip.addVar(vtype='C', lb=0, name=f"m_h_fc[{t}]") for t in range(period)]
+    p_fc = [model_scip.addVar(vtype='C', lb=0, ub=p_fc_max,
+                              name=f"p_fc[{t}]") for t in range(period)]
+    g_fc = [model_scip.addVar(vtype='C', lb=0, name=f"g_fc[{t}]") for t in range(period)]
+    g_fc_ht = [model_scip.addVar(vtype='C', lb=0, name=f"g_fc_ht[{t}]") for t in range(period)]
+    g_fc_de = [model_scip.addVar(vtype='C', lb=0, name=f"g_fc_de[{t}]") for t in range(period)]
+    t_fc = [model_scip.addVar(vtype='C', lb=t_fc_lb,ub=t_fc_ub, name=f"t_fc[{t}]") for t in range(period)]
+    m_fc = [model_scip.addVar(vtype='C', lb=m_fc_lb, ub=m_fc_ub,
+                              name=f"m_fc[{t}]") for t in range(period)]
+    p_pump_fc = [model_scip.addVar(vtype='C', lb=0, name=f"p_pump_fc[{t}]") for t in range(period)]
+    # m_h_fc = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"m_h_fc[{t}]") for t in range(period)]  # 燃料电池耗氢量
+    # p_fc = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, ub=p_fc_max,
+    #                      name=f"p_fc[{t}]") for t in range(period)]
+    # g_fc = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"g_fc[{t}]") for t in range(period)]
+    # g_fc_ht = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"g_fc_ht[{t}]") for t in range(period)]
+    # g_fc_de = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"g_fc_de[{t}]") for t in range(period)]
+    # t_fc = [model.addVar(vtype=GRB.CONTINUOUS, lb=t_fc_lb,ub=t_fc_ub, name=f"t_fc[{t}]") for t in range(period)]
+    # m_fc = [model.addVar(vtype=GRB.CONTINUOUS, lb=m_fc_lb, ub=m_fc_ub,
+    #                      name=f"m_fc[{t}]") for t in range(period)]  # 燃料电池循环水量
+    # p_pump_fc = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"p_pump_fc[{t}]") for t in range(period)]
     # HT
-    g_ht = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"g_ht[{t}]") for t in range(period)]  # 储热罐给末端供热量
-    t_ht_sto = [model.addVar(vtype=GRB.CONTINUOUS, lb=t_ht_sto_lb, ub=t_ht_sto_ub,
-                             name=f"t_ht_sto[{t}]") for t in range(period)]  # 储热罐蓄热温度
-    t_ht = [model.addVar(vtype=GRB.CONTINUOUS, lb=0,ub=t_ht_sto_ub, name=f"t_ht[{t}]") for t in range(period)]  # 储热罐出水温度
-    m_ht = [model.addVar(vtype=GRB.CONTINUOUS, lb=m_ht_lb, ub=m_ht_ub,
-                         name=f"m_ht[{t}]") for t in range(period)]  # 储热罐循环水量
+    g_ht = [model_scip.addVar(vtype='C', lb=0, name=f"g_ht[{t}]") for t in range(period)]
+    t_ht_sto = [model_scip.addVar(vtype='C', lb=t_ht_sto_lb, ub=t_ht_sto_ub,
+                                  name=f"t_ht_sto[{t}]") for t in range(period)]
+    t_ht = [model_scip.addVar(vtype='C', lb=0, ub=t_ht_sto_ub, name=f"t_ht[{t}]") for t in range(period)]
+    m_ht = [model_scip.addVar(vtype='C', lb=m_ht_lb, ub=m_ht_ub,
+                              name=f"m_ht[{t}]") for t in range(period)]
+    # g_ht = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"g_ht[{t}]") for t in range(period)]  # 储热罐给末端供热量
+    # t_ht_sto = [model.addVar(vtype=GRB.CONTINUOUS, lb=t_ht_sto_lb, ub=t_ht_sto_ub,
+    #                          name=f"t_ht_sto[{t}]") for t in range(period)]  # 储热罐蓄热温度
+    # t_ht = [model.addVar(vtype=GRB.CONTINUOUS, lb=0,ub=t_ht_sto_ub, name=f"t_ht[{t}]") for t in range(period)]  # 储热罐出水温度
+    # m_ht = [model.addVar(vtype=GRB.CONTINUOUS, lb=m_ht_lb, ub=m_ht_ub,
+    #                      name=f"m_ht[{t}]") for t in range(period)]  # 储热罐循环水量
     # p_pump_ht = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"p_pump_ht[{t}]") for t in range(period)]
     # BS
-    p_bs_sto = [model.addVar(vtype=GRB.CONTINUOUS, lb=p_bs_sto_lb, ub=p_bs_sto_ub,
-                             name=f"p_bs_sto[{t}]") for t in range(period)]  # 蓄电池储能量
-    p_bs_ch = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, ub=p_bs_sto_ub-p_bs_sto_lb,
-                            name=f"p_bs_ch[{t}]") for t in range(period)]  # 蓄电池充电功率
-    p_bs_dis = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, ub=p_bs_sto_ub-p_bs_sto_lb,
-                             name=f"p_bs_dis[{t}]") for t in range(period)]  # 蓄电池放电功率
+    p_bs_sto = [model_scip.addVar(vtype='C', lb=p_bs_sto_lb, ub=p_bs_sto_ub,
+                              name=f"p_bs_sto[{t}]") for t in range(period)]
+    p_bs_ch = [model_scip.addVar(vtype='C', lb=0, ub=p_bs_sto_ub-p_bs_sto_lb,
+                              name=f"p_bs_ch[{t}]") for t in range(period)]
+    p_bs_dis = [model_scip.addVar(vtype='C', lb=0, ub=p_bs_sto_ub-p_bs_sto_lb,
+                              name=f"p_bs_dis[{t}]") for t in range(period)]
+    # p_bs_sto = [model.addVar(vtype=GRB.CONTINUOUS, lb=p_bs_sto_lb, ub=p_bs_sto_ub,
+    #                          name=f"p_bs_sto[{t}]") for t in range(period)]  # 蓄电池储能量
+    # p_bs_ch = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, ub=p_bs_sto_ub-p_bs_sto_lb,
+    #                         name=f"p_bs_ch[{t}]") for t in range(period)]  # 蓄电池充电功率
+    # p_bs_dis = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, ub=p_bs_sto_ub-p_bs_sto_lb,
+    #                          name=f"p_bs_dis[{t}]") for t in range(period)]  # 蓄电池放电功率
     # PIPE
-    t_supply = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"t_supply[{t}]") for t in range(period)]  # 供水温度
-    m_de = [model.addVar(vtype=GRB.CONTINUOUS, lb=m_de_lb, ub=m_de_ub,
-                         name=f"m_de[{t}]") for t in range(period)]  # 管网循环水量
-    M_de = 100000 # 管网内水量
-    T_de = [model.addVar(vtype=GRB.CONTINUOUS, lb=t_de_lb, name=f"T_de[{t}]") for t in range(period)]  # 管网内平均水温
-    p_pump_pipe = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"p_pump_pipe[{t}]") for t in range(period)]  # 管网循环泵功率
+    t_supply = [model_scip.addVar(vtype='C', lb=0, name=f"t_supply[{t}]") for t in range(period)]  
+    m_de = [model_scip.addVar(vtype='C', lb=m_de_lb, ub=m_de_ub,
+                              name=f"m_de[{t}]") for t in range(period)]
+    M_de = 100000  # 管网内水量
+    T_de = [model_scip.addVar(vtype='C', lb=t_de_lb, name=f"T_de[{t}]") for t in range(period)]  # 管网内平均水温
+    p_pump_pipe = [model_scip.addVar(vtype='C', lb=0, name=f"p_pump_pipe[{t}]") for t in range(period)]  # 管网循环泵功率
+    # t_supply = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"t_supply[{t}]") for t in range(period)]  # 供水温度
+    # m_de = [model.addVar(vtype=GRB.CONTINUOUS, lb=m_de_lb, ub=m_de_ub,
+    #                      name=f"m_de[{t}]") for t in range(period)]  # 管网循环水量
+    # M_de = 100000 # 管网内水量
+    # T_de = [model.addVar(vtype=GRB.CONTINUOUS, lb=t_de_lb, name=f"T_de[{t}]") for t in range(period)]  # 管网内平均水温
+    # p_pump_pipe = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"p_pump_pipe[{t}]") for t in range(period)]  # 管网循环泵功率
     # PV
-    p_pv = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"p_pv[{t}]") for t in range(period)]  # 光伏发电功率
-    # TODO: PVT 要管吗？
+    p_pv = [model_scip.addVar(vtype='C', lb=0, name=f"p_pv[{t}]") for t in range(period)]  # 光伏发电功率
+    # p_pv = [model.addVar(vtype=GRB.CONTINUOUS, lb=0, name=f"p_pv[{t}]") for t in range(period)]  # 光伏发电功率
 
     # 添加约束
+    # TODO: 修改约束形式
     # model.addConstr(z_ghp[5] == 1)
     # 能量平衡
     model.addConstrs(p_pur[t] + p_pv[t] + p_fc[t] + p_bs_dis[t]
                      == p_load[t] + z_ghp[t]*p_ghp_max + p_eb[t] + p_ahp[t] + p_bs_ch[t]
                      + p_pump_ghp[t] + p_pump_eb[t] + p_pump_ahp[t] + p_pump_fc[t] + p_pump_pipe[t]
                      for t in range(period))
-    # TODO: 确认 M^{DE} 和 t^{MP} 指代是否正确
-    # TODO: 要添加工况约束吧，不然有问题
+    # NOTE: 确认 M^{DE} 和 t^{MP} 指代是否正确
+    # NOTE: 要添加工况约束吧，不然有问题
     model.addConstrs(g_ghp_de[t] + g_eb_de[t] + g_ahp[t] + g_fc_de[t] + g_ht[t]
                      == g_load[t]# + c_water * M_de * (T_de[t + 1] - T_de[t])
                      for t in range(period ))
-    # # TODO: 末时刻请果哥确认
+    # NOTE: 末时刻请果哥确认
     # model.addConstr(z_ghp_de[-1]*g_ghp_de[-1] + z_eb_de[-1]*g_eb_de[-1] + g_ahp[-1] + z_fc_de[-1]*g_fc_de[-1] + g_ht[-1]
     #                 == g_load[-1] )#+ c_water * M_de * (T_de[0] - T_de[-1]))
     model.addConstrs(h_pur[t] == m_h_fc[t] for t in range(period))  # 氢源购氢量等于燃料电池耗氢量
     # 流量平衡
-    # TODO: 如何处理蓄热的流量平衡？文档中未体现。蓄热不用管，因为蓄热没有混水问题，用能量形式就够了
+    # NOTE: 如何处理蓄热的流量平衡？文档中未体现。蓄热不用管，因为蓄热没有混水问题，用能量形式就够了
     model.addConstrs(m_ghp[t] + m_eb[t] + m_ahp[t] + m_fc[t] + m_ht[t] == m_de[t] for t in range(period))
     # fix m
     model.addConstrs(m_ghp[t] == m_ghp_lb for t in range(period))  # 固定减小复杂度
@@ -428,13 +501,13 @@ def opt_day(parameter_json, load_json, begin_time, time_scale, storage_begin_jso
 
     # 设备约束
     # GHP
-    # TODO: 这怎么建动态效率模型？用 getVal 来读温度吗？温度就是变量
+    # NOTE: 这怎么建动态效率模型？用 getVal 来读温度吗？温度就是变量
     model.addConstrs(g_ghp[t] == eta_ghp[t] * z_ghp[t] * p_ghp_max for t in range(period))
-    # TODO: t^{DE} 是固定值吗？目前先按变量建模。变量
+    # NOTE: t^{DE} 是固定值吗？目前先按变量建模。变量
     model.addConstrs(g_ghp[t]*z_ghp_de[t] == c_water * m_ghp[t] * (t_ghp[t] - t_de[t]) for t in range(period))
     model.addConstrs(p_pump_ghp[t] == eta_pump_ghp * m_ghp[t] for t in range(period))
     model.addConstrs(g_gtw[t]==g_ghp[t] - z_ghp[t] * p_ghp_max for t in range(period))
-    # TODO: 缺乏 GTW 约束描述，目前暂未建立 t^{GTW} 的关系
+    # NOTE: 缺乏 GTW 约束描述，目前暂未建立 t^{GTW} 的关系
     for t in range(period):
         model.addConstr(eta_ghp[t]==2+0.1209*t_gtw_out[t])
         model.addConstr(g_gtw[t]==c_water*m_gtw*(t_gtw_out[t]-t_gtw_in[t]))
@@ -449,7 +522,7 @@ def opt_day(parameter_json, load_json, begin_time, time_scale, storage_begin_jso
     model.addConstrs(g_eb[t]*z_eb_de[t] == c_water * m_eb[t] * (t_eb[t] - t_de[t]) for t in range(period))
     model.addConstrs(p_pump_eb[t] == eta_pump_eb * m_eb[t] for t in range(period))
     # AHP
-    # TODO: 修改空气源热泵的效率计算
+    # NOTE: 修改空气源热泵的效率计算
         # 一共有5个计算分区，顺序与表格一致
     for t in range(period):
         if t_env[t] < -15:
@@ -477,7 +550,7 @@ def opt_day(parameter_json, load_json, begin_time, time_scale, storage_begin_jso
     model.addConstrs(g_ahp[t] == c_water * m_ahp[t] * (t_ahp[t] - t_de[t]) for t in range(period))
     model.addConstrs(p_pump_ahp[t] == eta_pump_ahp * m_ahp[t] for t in range(period))
     # FC
-    # TODO: 修改了FC热计算
+    # NOTE: 修改了FC热计算
     model.addConstrs(p_fc[t] == eta_fc_p * m_h_fc[t] for t in range(period))
     for t in range(period):
         model.addGenConstrPWL(
@@ -490,13 +563,13 @@ def opt_day(parameter_json, load_json, begin_time, time_scale, storage_begin_jso
     model.addConstrs(g_fc[t]*z_fc_de[t] == c_water * m_fc[t] * (t_fc[t] - t_de[t]) for t in range(period))
     model.addConstrs(p_pump_fc[t] == eta_pump_fc * m_fc[t] for t in range(period))
     # HT
-    # TODO: 文档中该公式是否有问题？
+    # NOTE: 文档中该公式是否有问题？
     model.addConstrs(z_ghp_ht[t]*g_ghp_ht[t] + z_eb_ht[t]*g_eb_ht[t] + z_fc_ht[t]*g_fc_ht[t] - g_ht[t]
                      == c_water * m_ht_sto * (t_ht_sto[t + 1] - t_ht_sto[t]) + eta_ht_loss * (t_ht_sto[t] - t_env[t])
                      for t in range(period - 1))
     model.addConstr(z_ghp_ht[-1]*g_ghp_ht[-1] + z_eb_ht[t]*g_eb_ht[-1] + z_fc_ht[t]*g_fc_ht[-1] - g_ht[-1]
                     == c_water * m_ht_sto * (t_ht_sto[0] - t_ht_sto[-1]) + eta_ht_loss * (t_ht_sto[-1] - t_env[23]))
-    # TODO: 建模可否省略为 g^{HW} = c * m^{HW} * (t^{HW} - t^{DE})？可以
+    # NOTE: 建模可否省略为 g^{HW} = c * m^{HW} * (t^{HW} - t^{DE})？可以
     model.addConstrs(g_ht[t] == c_water * m_ht[t] * (t_ht[t] - t_de[t])
                      for t in range(period))
     # model.addConstrs(p_pump_ht[t] == eta_pump_ht * m_ht[t] for t in range(period))
@@ -541,7 +614,7 @@ def opt_day(parameter_json, load_json, begin_time, time_scale, storage_begin_jso
         print("Irreducible inconsistent subsystem is written to file 'model.ilp'")
         exit(0)
 
-    # TODO: 输出未处理
+    # NOTE: 输出未处理
     # 计算一些参数
     # opex_without_opt = [lambda_ele_in[i]*(p_load[i]+q_load[i]/k_hp_q+g_load[i]/k_eb) for i in range(period)]
     # 重新构建输出
