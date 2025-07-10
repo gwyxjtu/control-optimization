@@ -1,58 +1,62 @@
 \ Model bilinear_copy
 \ LP format - for model browsing. Use MPS format to capture full model detail.
-\ Signature: 0x58794f17e8d2bdc9
+\ Signature: 0xf61abc4ba9a98c8a
 Minimize
  
 Subject To
- R0: z_ghp[5] = 1
- R96: m_ghp[23] = 100
- R120: m_eb[23] = 100
- R144: m_ahp[23] = 100
- R168: m_fc[23] = 100
- R192: m_ht[23] = 100
- R405: cop_ghp[5] - 0.1209 t_gtw_out[5] = 2
- R406: g_ghp[5] + 116.6666666666667 t_gtw_in[5]
-   - 116.6666666666667 t_gtw_out[5] = 0
- R407: 0.8 t_gtw_out[5] - 0.8 t_b[5] = 0
- R408: 1.8252521905516789e-04 g_ghp[0] + 2.2341118848371688e-04 g_ghp[1]
-   + 2.8800381207651736e-04 g_ghp[2] + 4.0591638502692168e-04 g_ghp[3]
-   + 6.9392620385702814e-04 g_ghp[4] + 1.3476552126970363e-04 g_ghp[5]
-   - 0.00192854832976906 g_ghp[23] + t_b[5] = 10.5
- qc0: [ t_ghp[23] * m_ghp[23] + t_eb[23] * m_eb[23] + t_ahp[23] * m_ahp[23]
+ R215: m_de[23] = 500
+ R263: z_ghp_ht[23] + z_ghp_de[23] - z_ghp[23] = 0
+ R287: z_eb_ht[23] + z_eb_de[23] <= 1
+ R311: z_fc_ht[23] + z_fc_de[23] <= 1
+ qc0: g_ahp[23] + g_ht[23] + [ z_ghp_de[23] * g_ghp_de[23]
+   + z_eb_de[23] * g_eb_de[23] + z_fc_de[23] * g_fc_de[23] ]
+   = 1067.96126342543
+ qc1: [ t_ghp[23] * m_ghp[23] + t_eb[23] * m_eb[23] + t_ahp[23] * m_ahp[23]
    + t_fc[23] * m_fc[23] + t_ht[23] * m_ht[23] - t_supply[23] * m_de[23] ]
    = 0
- qc1: g_ghp[5] + [ - 300 z_ghp[5] * cop_ghp[5] ] = 0
- qc2: g_ghp[23] + [ 1.166666666666667 t_de[23] * m_ghp[23]
+ qc2: g_ghp[23] + [ - z_ghp_ht[23] * g_ghp_ht[23]
+   - z_ghp_de[23] * g_ghp_de[23] ] = 0
+ qc3: g_eb[23] + [ - z_eb_ht[23] * g_eb_ht[23] - z_eb_de[23] * g_eb_de[23]
+   ] = 0
+ qc4: g_fc[23] + [ - z_fc_ht[23] * g_fc_ht[23] - z_fc_de[23] * g_fc_de[23]
+   ] = 0
+ qc5: [ z_ghp_de[23] * g_ghp[23] + 1.166666666666667 t_de[23] * m_ghp[23]
    - 1.166666666666667 t_ghp[23] * m_ghp[23] ] = 0
- qc3: g_eb[23] + [ 1.166666666666667 t_de[23] * m_eb[23]
+ qc6: [ z_eb_de[23] * g_eb[23] + 1.166666666666667 t_de[23] * m_eb[23]
    - 1.166666666666667 t_eb[23] * m_eb[23] ] = 0
- qc4: g_ahp[23] + [ 1.166666666666667 t_de[23] * m_ahp[23]
+ qc7: g_ahp[23] + [ 1.166666666666667 t_de[23] * m_ahp[23]
    - 1.166666666666667 t_ahp[23] * m_ahp[23] ] = 0
- qc5: g_fc[23] + [ 1.166666666666667 t_de[23] * m_fc[23]
+ qc8: [ z_fc_de[23] * g_fc[23] + 1.166666666666667 t_de[23] * m_fc[23]
    - 1.166666666666667 t_fc[23] * m_fc[23] ] = 0
- qc6: g_ht[23] + [ 1.166666666666667 t_de[23] * m_ht[23]
+ qc9: g_ht[23] + [ 1.166666666666667 t_de[23] * m_ht[23]
    - 1.166666666666667 t_ht[23] * m_ht[23] ] = 0
- qc7: 0.05 t_supply[23] + [ - 1.166666666666667 t_de[23] * m_de[23]
+ qc10: [ - 1.166666666666667 t_de[23] * m_de[23]
    + 1.166666666666667 t_supply[23] * m_de[23] ] = 1216.346289480299
 Bounds
- t_de[23] free
- g_ghp[5] free
  g_ghp[23] free
+ g_ghp_ht[23] free
+ g_ghp_de[23] free
  t_ghp[23] free
- m_ghp[23] free
- cop_ghp[5] free
- t_gtw_in[5] >= 4
- t_gtw_out[5] free
- t_b[5] free
+ -infinity <= m_ghp[23] <= 100
+ g_eb[23] free
+ g_eb_ht[23] free
+ g_eb_de[23] free
  t_eb[23] free
- m_eb[23] free
- t_ahp[23] >= 35
- m_ahp[23] free
- t_fc[23] >= 35
- m_fc[23] free
+ -infinity <= m_eb[23] <= 100
+ g_ahp[23] free
+ t_ahp[23] free
+ -infinity <= m_ahp[23] <= 100
+ g_fc[23] free
+ g_fc_ht[23] free
+ g_fc_de[23] free
+ t_fc[23] free
+ -infinity <= m_fc[23] <= 100
+ g_ht[23] free
  t_ht[23] free
- m_ht[23] free
- 50 <= m_de[23] <= 500
+ -infinity <= m_ht[23] <= 100
+ t_supply[23] free
+ m_de[23] free
 Binaries
- z_ghp[5]
+ z_ghp_ht[23] z_ghp_de[23] z_eb_ht[23] z_eb_de[23] z_fc_ht[23] z_fc_de[23]
+ z_ghp[23]
 End
