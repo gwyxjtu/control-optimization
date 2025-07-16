@@ -1,8 +1,16 @@
+'''
+Author: guo-4060ti 867718012@qq.com
+Date: 2025-07-14 17:19:02
+LastEditTime: 2025-07-15 14:16:57
+LastEditors: guo-4060ti 867718012@qq.com
+FilePath: \control-optimization\optimization_24h.py
+Description: 雪花掩盖着哽咽叹息这离别
+'''
 import json
 import pprint
 import pandas as pd
 from cpeslog.log_code import _logging
-from Model.optimization_day import opt_day, to_csv
+from Model.optimization_day_scip import opt_day, to_csv
 
 
 if __name__ == '__main__':
@@ -15,24 +23,24 @@ if __name__ == '__main__':
     _logging.info('start')
     time_length = 24
     try:
-        with open("contral-opt\control-optimization\Config/config.json", "rb") as f:
+        with open("Config/config.json", "rb") as f:
             input_json = json.load(f)
     except BaseException as E:
         _logging.error('读取config失败,错误原因为{}'.format(E))
         raise Exception
     # 读取输入excel
     try:
-        load = pd.read_excel('contral-opt\control-optimization\input_720/input_720h.xls')
+        load = pd.read_excel('input_720/input_720h.xls')
     except BaseException as E:
         _logging.error('读取input_720h的excel失败,错误原因为{}'.format(E))
         raise Exception
     try:
-        sto = pd.read_excel('contral-opt\control-optimization\input_720/input_now.xls')
+        sto = pd.read_excel('input_720/input_now.xls')
     except BaseException as E:
         _logging.error('读取input_now的excel失败,错误原因为{}'.format(E))
         raise Exception
     try:
-        sto_end = pd.read_excel('contral-opt\control-optimization\input_720\input_end.xls')
+        sto_end = pd.read_excel('input_720\input_end.xls')
 
     except BaseException as E:
         _logging.error('读取input_end的excel失败,错误原因为{}'.format(E))

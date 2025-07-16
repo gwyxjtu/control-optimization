@@ -554,6 +554,8 @@ def opt_day(parameter_json, load_json, begin_time, time_scale, storage_begin_jso
     
     z_sum = opt.quicksum(z_pur[t] + z_ghp_ht[t] + z_ghp_de[t] + z_eb_ht[t] + z_eb_de[t] + z_fc_ht[t] + z_fc_de[t] + z_ht_sto[t] for t in range(period))
     model_scip.setObjective(opex + z_sum, sense="minimize")
+    # time limit
+    model_scip.setParam("limits/time", 100)  # 设置时间限制为300秒
     # model.setObjective(opex + z_sum, GRB.MINIMIZE)
     # model.params.NonConvex = 2
     # model.params.MIPGap = 0.02
