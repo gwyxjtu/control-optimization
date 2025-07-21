@@ -122,6 +122,7 @@
                 "eta_pump":0.2,
                 "beta_ghpg":3.54,
                 "beta_ghpq":4,
+                "max_time":8,
                 "comment":"ground source heat pump"
             },
         "ahp":

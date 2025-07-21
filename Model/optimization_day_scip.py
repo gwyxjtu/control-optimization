@@ -1,9 +1,9 @@
 '''
 Author: guo-4060ti 867718012@qq.com
 Date: 2025-06-16 20:19:09
-LastEditTime: 2025-06-21 10:33:52
+LastEditTime: 2025-07-21 17:53:03
 LastEditors: guo-4060ti 867718012@qq.com
-FilePath: \control-optimization\Model\optimization_day.py
+FilePath: \control-optimization\Model\optimization_day_scip.py
 Description: 雪花掩盖着哽咽叹息这离别
 '''
 
@@ -141,7 +141,7 @@ def opt_day(parameter_json, load_json, begin_time, time_scale, storage_begin_jso
     """
     # 常量
     c_water = 4.2e3 / 3600  # 水的比热容 (kWh/(t·K))
-    M = 1e10  # 大数
+    M = 3000  # 大数
     
     # 初始化设备效率参数
     try:        
@@ -442,6 +442,7 @@ def opt_day(parameter_json, load_json, begin_time, time_scale, storage_begin_jso
         model_scip.addCons(g_ghp[t] * z_ghp_de[t] == c_water * m_ghp_lb * (t_ghp[t] - t_de[t]))
         model_scip.addCons(p_pump_ghp[t] == eta_pump_ghp * m_ghp_lb)
         # model_scip.addCons(g_gtw[t] == g_ghp[t] - z_ghp[t] * p_ghp_max)   
+    model_scip.addCons( opt.quicksum(z_ghp) == parameter_json['device']['ghp']['max_time'])  # 浅层地源热泵最大工作时长
     # 设备约束
     # HACK: 地源热泵使用静态COP
     # # GTW
@@ -593,7 +594,7 @@ def opt_day(parameter_json, load_json, begin_time, time_scale, storage_begin_jso
         "h_pur": [model_scip.getVal(h_pur[t]) for t in range(period)],
         "t_de": [model_scip.getVal(t_de[t]) for t in range(period)],
         "t_supply": [model_scip.getVal(t_supply[t]) for t in range(period)],
-        "g_ghp": [model_scip.getVal(z_ghp[t]) * p_ghp_max for t in range(period)],
+        "p_ghp": [model_scip.getVal(z_ghp[t]) * p_ghp_max for t in range(period)],
         "g_ghp_ht": [model_scip.getVal(g_ghp_ht[t]) for t in range(period)],
         "g_ghp_de": [model_scip.getVal(g_ghp_de[t]) for t in range(period)],
         "t_ghp": [model_scip.getVal(t_ghp[t]) for t in range(period)],
